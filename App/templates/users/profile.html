@@ -1,0 +1,658 @@
+{% extends "users/base.html" %}
+{% block title %}Profile — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --sky:   #0ea5e9;
+        --sky2:  #38bdf8;
+        --skyd:  #0284c7;
+        --org:   #f97316;
+        --dark:  #060d1a;
+        --dark2: #0c1629;
+        --dark3: #111e35;
+        --border: rgba(14,165,233,0.13);
+        --muted: #4a637d;
+        --text:  #cfe4f5;
+    }
+
+    /* ── BACKGROUND ── */
+    .profile-bg {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background:
+            radial-gradient(ellipse 70% 50% at 15% 40%, rgba(14,165,233,0.09) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 40% at 90% 70%, rgba(249,115,22,0.06) 0%, transparent 50%);
+    }
+    .profile-mesh {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background-image:
+            linear-gradient(rgba(14,165,233,0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(14,165,233,0.035) 1px, transparent 1px);
+        background-size: 55px 55px;
+        animation: meshDrift 30s linear infinite;
+    }
+    @keyframes meshDrift {
+        0%   { background-position: 0 0; }
+        100% { background-position: 55px 55px; }
+    }
+    .profile-pts { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .ppt { position: absolute; border-radius: 50%; animation: ptRise linear infinite; }
+    @keyframes ptRise {
+        0%   { transform: translateY(110vh); opacity: 0; }
+        8%   { opacity: 1; }
+        92%  { opacity: 0.55; }
+        100% { transform: translateY(-10vh); opacity: 0; }
+    }
+
+    /* ── PAGE LAYOUT ── */
+    .profile-page {
+        position: relative; z-index: 1;
+        min-height: calc(100vh - 70px);
+        padding: 48px 40px;
+        display: flex; align-items: flex-start; justify-content: center;
+    }
+
+    .profile-wrapper {
+        max-width: 720px; width: 100%;
+    }
+
+    /* ── PAGE HEADER ── */
+    .profile-header {
+        text-align: center; margin-bottom: 36px;
+        animation: fadeUp 0.7s ease both;
+    }
+    .profile-header .eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 2.5px;
+        text-transform: uppercase; color: var(--sky);
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        margin-bottom: 10px;
+    }
+    .profile-header .eyebrow::before,
+    .profile-header .eyebrow::after { content:''; width:30px; height:1px; background: var(--border); }
+    .profile-header h1 {
+        font-family: 'DM Serif Display', serif;
+        font-size: 2rem; color: white; margin-bottom: 6px;
+    }
+    .profile-header p { color: var(--muted); font-size: 0.88rem; }
+
+    @keyframes fadeUp {
+        from { opacity:0; transform: translateY(24px); }
+        to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ── AVATAR CARD ── */
+    .avatar-card {
+        position: relative;
+        background: rgba(10,18,32,0.8);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 30px 32px;
+        display: flex; align-items: center; gap: 28px;
+        margin-bottom: 18px;
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+        animation: fadeUp 0.7s 0.1s ease both;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .avatar-card:hover {
+        border-color: rgba(14,165,233,0.25);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+
+    /* card scan beam */
+    .card-beam {
+        position: absolute; left:0; right:0; height:1px;
+        background: linear-gradient(90deg, transparent, rgba(14,165,233,0.5), transparent);
+        animation: beamDown 5s ease-in-out infinite;
+        pointer-events: none;
+    }
+    @keyframes beamDown {
+        0%   { top:0; opacity:0; }
+        5%   { opacity:1; }
+        95%  { opacity:1; }
+        100% { top:100%; opacity:0; }
+    }
+
+    /* corner brackets */
+    .crn { position:absolute; width:22px; height:22px; opacity:0.35; }
+    .crn-tl { top:10px; left:10px; border-top:2px solid var(--sky); border-left:2px solid var(--sky); }
+    .crn-tr { top:10px; right:10px; border-top:2px solid var(--sky); border-right:2px solid var(--sky); }
+    .crn-bl { bottom:10px; left:10px; border-bottom:2px solid var(--sky); border-left:2px solid var(--sky); }
+    .crn-br { bottom:10px; right:10px; border-bottom:2px solid var(--sky); border-right:2px solid var(--sky); }
+
+    /* ── AVATAR VISUAL ── */
+    .avatar-visual {
+        position: relative; flex-shrink: 0;
+        width: 110px; height: 110px;
+    }
+
+    /* spinning ring around avatar */
+    .avatar-ring {
+        position: absolute; inset: -8px;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        border-top-color: rgba(14,165,233,0.5);
+        border-right-color: rgba(14,165,233,0.2);
+        animation: spinRing 8s linear infinite;
+    }
+    .avatar-ring-2 {
+        position: absolute; inset: -14px;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        border-bottom-color: rgba(249,115,22,0.3);
+        animation: spinRing 13s linear infinite reverse;
+    }
+    @keyframes spinRing { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    .rdot {
+        position: absolute; border-radius: 50%;
+        top: -4px; left: calc(50% - 4px);
+        width: 7px; height: 7px;
+        background: var(--sky); box-shadow: 0 0 8px rgba(14,165,233,1);
+    }
+    .rdot-org { background: var(--org); box-shadow: 0 0 8px rgba(249,115,22,0.9); width:5px; height:5px; top:-2.5px; left:calc(50% - 2.5px); }
+
+    .avatar-wrap {
+        position: relative; z-index: 1;
+        width: 110px; height: 110px;
+        border-radius: 50%; overflow: hidden;
+        border: 2px solid rgba(14,165,233,0.35);
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+    .avatar-wrap:hover { border-color: rgba(14,165,233,0.7); }
+    .avatar-wrap img {
+        width: 100%; height: 100%;
+        object-fit: cover; display: block;
+        transition: transform 0.4s ease;
+    }
+    .avatar-wrap:hover img { transform: scale(1.06); }
+
+    /* overlay on hover */
+    .avatar-overlay {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(14,165,233,0.5);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.3s;
+        font-size: 0.7rem; font-weight: 700; color: white; gap: 4px;
+        cursor: pointer;
+    }
+    .avatar-wrap:hover .avatar-overlay { opacity: 1; }
+    .avatar-overlay i { font-size: 1.1rem; }
+
+    /* badge */
+    .avatar-badge-dot {
+        position: absolute; bottom: 4px; right: 4px; z-index: 2;
+        width: 22px; height: 22px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--sky), var(--skyd));
+        border: 2px solid #060d1a;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.6rem; color: white;
+        animation: badgePulse 2.5s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+        0%,100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.4); }
+        50%      { box-shadow: 0 0 0 6px rgba(14,165,233,0); }
+    }
+
+    /* avatar info */
+    .avatar-info { flex: 1; }
+    .avatar-info h2 {
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.4rem; color: white;
+        margin-bottom: 4px;
+    }
+    .avatar-email { color: var(--muted); font-size: 0.84rem; margin-bottom: 12px; }
+
+    .role-badge {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 5px 14px; border-radius: 100px;
+        font-size: 0.74rem; font-weight: 700;
+    }
+    .role-badge.patient {
+        background: rgba(249,115,22,0.1);
+        border: 1px solid rgba(249,115,22,0.22);
+        color: #fb923c;
+    }
+    .role-badge.doctor {
+        background: rgba(14,165,233,0.1);
+        border: 1px solid rgba(14,165,233,0.22);
+        color: var(--sky2);
+    }
+    .role-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        animation: dotBlink 2s ease-in-out infinite;
+    }
+    .role-badge.patient .role-dot { background: var(--org); box-shadow: 0 0 5px rgba(249,115,22,0.8); }
+    .role-badge.doctor  .role-dot { background: var(--sky); box-shadow: 0 0 5px rgba(14,165,233,0.8); }
+    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* stats row in avatar card */
+    .avatar-stats {
+        display: flex; gap: 16px; margin-top: 14px;
+    }
+    .astat {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.76rem; color: var(--muted);
+    }
+    .astat i { color: var(--sky); font-size: 0.78rem; }
+
+    /* ── FORM CARD ── */
+    .form-card {
+        position: relative;
+        background: rgba(10,18,32,0.8);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px;
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+        animation: fadeUp 0.7s 0.2s ease both;
+        transition: border-color 0.3s;
+    }
+    .form-card:hover { border-color: rgba(14,165,233,0.2); }
+
+    /* ── SECTION TITLES ── */
+    .sec-title {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 0.68rem; font-weight: 700;
+        color: var(--sky); letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 18px; margin-top: 28px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(14,165,233,0.1);
+    }
+    .sec-title:first-child { margin-top: 0; }
+    .sec-title i {
+        width: 28px; height: 28px; border-radius: 8px;
+        background: rgba(14,165,233,0.1);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    /* ── FIELD GROUP ── */
+    .field-group {
+        margin-bottom: 16px;
+        animation: fieldIn 0.5s ease both;
+    }
+    .field-group:nth-child(1) { animation-delay: 0.05s; }
+    .field-group:nth-child(2) { animation-delay: 0.12s; }
+    .field-group:nth-child(3) { animation-delay: 0.19s; }
+    .field-group:nth-child(4) { animation-delay: 0.26s; }
+    @keyframes fieldIn {
+        from { opacity:0; transform: translateY(12px); }
+        to   { opacity:1; transform: translateY(0); }
+    }
+
+    .field-label {
+        display: block;
+        font-size: 0.7rem; font-weight: 700;
+        color: var(--muted); margin-bottom: 7px;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* ── INPUT SHELL ── */
+    .ishell {
+        position: relative;
+        display: flex; align-items: center;
+        height: 48px;
+        background: rgba(6,13,26,0.9);
+        border: 1px solid rgba(14,165,233,0.12);
+        border-radius: 10px; overflow: hidden;
+        transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+    .ishell::after {
+        content: '';
+        position: absolute; bottom:0; left:0; right:0; height:2px;
+        background: linear-gradient(90deg, var(--sky), var(--sky2));
+        transform: scaleX(0); transform-origin: left;
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .ishell:focus-within {
+        border-color: rgba(14,165,233,0.38);
+        background: rgba(14,165,233,0.04);
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.07);
+    }
+    .ishell:focus-within::after { transform: scaleX(1); }
+
+    .iico {
+        width: 42px; display: flex; align-items: center; justify-content: center;
+        color: rgba(14,165,233,0.3); font-size: 0.85rem; flex-shrink: 0;
+        transition: color 0.25s;
+    }
+    .ishell:focus-within .iico { color: var(--sky); }
+
+    /* override Django default inputs */
+    .field-group input[type="text"],
+    .field-group input[type="email"] {
+        flex: 1 !important; width: 100% !important;
+        background: rgba(6,13,26,0.9) !important;
+        border: 1px solid rgba(14,165,233,0.12) !important;
+        border-radius: 10px !important;
+        color: var(--text) !important;
+        padding: 0 14px !important;
+        height: 48px !important;
+        font-family: 'Outfit', sans-serif !important;
+        font-size: 0.9rem !important;
+        outline: none !important;
+        transition: all 0.25s !important;
+        position: relative;
+    }
+    .field-group input[type="text"]:focus,
+    .field-group input[type="email"]:focus {
+        border-color: rgba(14,165,233,0.38) !important;
+        background: rgba(14,165,233,0.04) !important;
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.07) !important;
+    }
+    .field-group input[type="text"]::placeholder,
+    .field-group input[type="email"]::placeholder { color: #1b3047 !important; }
+
+    /* file upload */
+    .file-zone {
+        position: relative;
+        border: 2px dashed rgba(14,165,233,0.2);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: rgba(6,13,26,0.5);
+    }
+    .file-zone:hover {
+        border-color: rgba(14,165,233,0.45);
+        background: rgba(14,165,233,0.04);
+    }
+    .file-zone.dragover {
+        border-color: var(--sky);
+        background: rgba(14,165,233,0.08);
+        transform: scale(1.01);
+    }
+    .file-zone i { font-size: 1.6rem; color: rgba(14,165,233,0.4); margin-bottom: 8px; }
+    .file-zone p { font-size: 0.82rem; color: var(--muted); }
+    .file-zone span { color: var(--sky); font-weight: 600; }
+    .file-zone input[type="file"] {
+        position: absolute; inset: 0;
+        opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .file-name {
+        margin-top: 8px; font-size: 0.78rem;
+        color: var(--sky2); display: none;
+    }
+    .file-name.show { display: block; }
+
+    /* textarea */
+    .field-group textarea {
+        width: 100% !important;
+        background: rgba(6,13,26,0.9) !important;
+        border: 1px solid rgba(14,165,233,0.12) !important;
+        border-radius: 10px !important;
+        color: var(--text) !important;
+        padding: 12px 14px !important;
+        font-family: 'Outfit', sans-serif !important;
+        font-size: 0.9rem !important;
+        outline: none !important;
+        transition: all 0.25s !important;
+        resize: vertical; min-height: 90px;
+    }
+    .field-group textarea:focus {
+        border-color: rgba(14,165,233,0.38) !important;
+        background: rgba(14,165,233,0.04) !important;
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.07) !important;
+    }
+
+    /* ── ERROR ── */
+    .err-box {
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.2);
+        border-radius: 10px; padding: 11px 15px;
+        margin-bottom: 18px;
+        font-size: 0.82rem; color: #fca5a5;
+        display: flex; gap: 9px; align-items: flex-start;
+        animation: shake 0.35s ease;
+    }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+    /* ── CHANGE PASSWORD LINK ── */
+    .pw-link {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(14,165,233,0.07);
+        border: 1px solid rgba(14,165,233,0.15);
+        border-radius: 8px; padding: 8px 14px;
+        color: var(--sky2); font-size: 0.82rem; font-weight: 600;
+        text-decoration: none; transition: all 0.25s;
+        margin-top: 8px;
+    }
+    .pw-link:hover {
+        background: rgba(14,165,233,0.14);
+        border-color: rgba(14,165,233,0.3);
+        color: white; text-decoration: none;
+        transform: translateX(4px);
+    }
+
+    /* ── BUTTONS ── */
+    .btn-row {
+        display: flex; gap: 12px; margin-top: 28px;
+        animation: fieldIn 0.5s 0.5s ease both;
+    }
+
+    .btn-save {
+        flex: 1; height: 50px;
+        background: linear-gradient(135deg, var(--sky), var(--skyd));
+        border: none; border-radius: 11px;
+        color: white; font-family: 'Outfit', sans-serif;
+        font-size: 0.95rem; font-weight: 700;
+        cursor: pointer; position: relative; overflow: hidden;
+        transition: transform 0.25s, box-shadow 0.25s;
+        display: flex; align-items: center; justify-content: center; gap: 9px;
+    }
+    .btn-save .shimmer {
+        position: absolute; inset: 0;
+        background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+        transform: translateX(-100%); transition: transform 0.5s;
+    }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(14,165,233,0.38); }
+    .btn-save:hover .shimmer { transform: translateX(100%); }
+    .btn-save:active { transform: translateY(0); }
+
+    .btn-reset {
+        height: 50px; padding: 0 24px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(148,163,184,0.12);
+        border-radius: 11px;
+        color: var(--muted); font-family: 'Outfit', sans-serif;
+        font-size: 0.9rem; font-weight: 600;
+        cursor: pointer; transition: all 0.25s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .btn-reset:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    @media (max-width: 700px) {
+        .profile-page { padding: 24px 16px; }
+        .avatar-card { flex-direction: column; text-align: center; }
+        .avatar-stats { justify-content: center; }
+        .btn-row { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Background layers -->
+<div class="profile-bg"></div>
+<div class="profile-mesh"></div>
+<div class="profile-pts" id="ppts"></div>
+
+<div class="profile-page">
+    <div class="profile-wrapper">
+
+        <!-- PAGE HEADER -->
+        <div class="profile-header">
+            <div class="eyebrow"><i class="fas fa-circle-user"></i> Account</div>
+            <h1>Your Profile</h1>
+            <p>Manage your account details and preferences</p>
+        </div>
+
+        <!-- AVATAR CARD -->
+        <div class="avatar-card">
+            <div class="card-beam"></div>
+            <div class="crn crn-tl"></div><div class="crn crn-tr"></div>
+            <div class="crn crn-bl"></div><div class="crn crn-br"></div>
+
+            <div class="avatar-visual">
+                <div class="avatar-ring-2"><div class="rdot rdot-org"></div></div>
+                <div class="avatar-ring"><div class="rdot"></div></div>
+                <div class="avatar-wrap" onclick="document.querySelector('input[type=file]').click()">
+                    <img src="{{ user.profile.avatar.url }}" alt="Avatar" id="avatarPreview">
+                    <div class="avatar-overlay">
+                        <i class="fas fa-camera"></i>
+                        Change
+                    </div>
+                </div>
+                <div class="avatar-badge-dot"><i class="fas fa-camera"></i></div>
+            </div>
+
+            <div class="avatar-info">
+                <h2>{{ user.get_full_name|default:user.username }}</h2>
+                <div class="avatar-email">{{ user.email }}</div>
+
+                <span class="role-badge {% if user.profile.user_type == 'doctor' %}doctor{% else %}patient{% endif %}">
+                    <div class="role-dot"></div>
+                    <i class="fas fa-{% if user.profile.user_type == 'doctor' %}stethoscope{% else %}user-injured{% endif %}"></i>
+                    {{ user.profile.user_type|title }}
+                </span>
+
+                <div class="avatar-stats">
+                    <div class="astat"><i class="fas fa-calendar-check"></i> Member since {{ user.date_joined|date:"M Y" }}</div>
+                    <div class="astat"><i class="fas fa-shield-halved"></i> Verified</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM CARD -->
+        <div class="form-card">
+            <div class="card-beam" style="animation-delay:2s;"></div>
+
+            {% if user_form.errors %}
+            <div class="err-box">
+                <i class="fas fa-circle-exclamation" style="margin-top:2px;flex-shrink:0;"></i>
+                <div>{% for key, value in user_form.errors.items %}<p style="margin:0;">{{ value }}</p>{% endfor %}</div>
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- ACCOUNT INFO -->
+                <div class="sec-title">
+                    <i class="fas fa-user"></i> Account Info
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Username</label>
+                    {{ user_form.username }}
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Email Address</label>
+                    {{ user_form.email }}
+                </div>
+
+                <!-- PROFILE DETAILS -->
+                <div class="sec-title">
+                    <i class="fas fa-image"></i> Profile Details
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Profile Photo</label>
+                    <div class="file-zone" id="fileZone">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                        <p>Drag & drop or <span>browse</span> to upload</p>
+                        <p style="font-size:0.73rem;margin-top:4px;color:#2d4a62;">PNG, JPG up to 5MB</p>
+                        {{ profile_form.avatar }}
+                        <div class="file-name" id="fileName"></div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Bio</label>
+                    {{ profile_form.bio }}
+                </div>
+
+                <!-- SECURITY -->
+                <div class="sec-title">
+                    <i class="fas fa-lock"></i> Security
+                </div>
+
+                <a href="{% url 'password_change' %}" class="pw-link">
+                    <i class="fas fa-key"></i> Change Password
+                    <i class="fas fa-arrow-right" style="font-size:0.7rem;margin-left:auto;"></i>
+                </a>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn-save">
+                        <div class="shimmer"></div>
+                        <i class="fas fa-floppy-disk"></i> Save Changes
+                    </button>
+                    <button type="reset" class="btn-reset">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ── Particles
+    const ppts = document.getElementById('ppts');
+    for (let i = 0; i < 16; i++) {
+        const d = document.createElement('div');
+        d.className = 'ppt';
+        const sz = Math.random() * 5 + 2;
+        const isBlue = Math.random() > 0.4;
+        d.style.cssText = `
+            width:${sz}px; height:${sz}px;
+            left:${Math.random()*100}%;
+            animation-duration:${Math.random()*18+10}s;
+            animation-delay:-${Math.random()*18}s;
+            background:${isBlue
+                ? `rgba(14,165,233,${(Math.random()*0.15+0.04).toFixed(2)})`
+                : `rgba(249,115,22,${(Math.random()*0.12+0.03).toFixed(2)})`};
+        `;
+        ppts.appendChild(d);
+    }
+
+    // ── Live avatar preview
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('avatarPreview').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+
+                // show filename
+                const fn = document.getElementById('fileName');
+                fn.textContent = '✓ ' + file.name;
+                fn.classList.add('show');
+            }
+        });
+
+        // drag & drop highlight
+        const zone = document.getElementById('fileZone');
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault(); zone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+</script>
+{% endblock %}

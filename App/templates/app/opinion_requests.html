@@ -1,0 +1,219 @@
+{% extends "users/base.html" %}
+{% block title %}Review Requests — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+space grotesk+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--org:#f97316;--grn:#10b981;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+.pg{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Space Grotesk',sans-serif;}
+.pg-hdr{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px;animation:fadeUp .7s ease both;}
+.pg-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pg-eyebrow::before{content:'';width:22px;height:1px;background:var(--sky);}
+.pg-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;}
+
+/* tab row */
+.tab-row{display:flex;gap:8px;margin-bottom:24px;animation:fadeUp .7s .1s ease both;}
+.tab-btn{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:1px solid var(--bd);background:rgba(8,16,30,.7);color:var(--mu2);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;font-family:'Space Grotesk',sans-serif;}
+.tab-btn:hover{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);color:var(--sky2);}
+.tab-btn.active{background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.3);color:var(--sky2);}
+.tab-count{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;background:rgba(14,165,233,.2);border-radius:100px;padding:2px 7px;color:var(--sky2);}
+.tab-count.orange{background:rgba(249,115,22,.2);color:var(--org);}
+
+/* tab panels */
+.tab-panel{display:none;} .tab-panel.active{display:block;}
+
+/* request cards */
+.req-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px;}
+.req-card{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;overflow:hidden;backdrop-filter:blur(14px);animation:cardIn .5s ease both;transition:border-color .3s;}
+.req-card:hover{border-color:rgba(14,165,233,.22);}
+
+/* urgency top stripe */
+.req-card.urg-low::before{content:'';display:block;height:3px;background:linear-gradient(90deg,#10b981,#34d399);}
+.req-card.urg-normal::before{content:'';display:block;height:3px;background:linear-gradient(90deg,var(--sky),#06b6d4);}
+.req-card.urg-urgent::before{content:'';display:block;height:3px;background:linear-gradient(90deg,#ef4444,#f97316);}
+
+.req-head{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(14,165,233,.08);}
+.req-scan-img{width:54px;height:54px;border-radius:9px;overflow:hidden;background:#000;flex-shrink:0;}
+.req-scan-img img{width:100%;height:100%;object-fit:contain;}
+.req-patient-name{font-weight:700;color:white;font-size:.92rem;margin-bottom:2px;}
+.req-meta{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mu);}
+.req-urg-badge{margin-left:auto;padding:4px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;}
+.urg-low-b{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#34d399;}
+.urg-normal-b{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.25);color:var(--sky2);}
+.urg-urgent-b{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#f87171;}
+
+.req-body{padding:14px 18px;}
+.req-diagnosis{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;text-transform:uppercase;margin-bottom:10px;}
+.req-message{font-size:.83rem;color:var(--mu2);line-height:1.65;padding:10px 12px;background:rgba(14,165,233,.03);border:1px solid rgba(14,165,233,.07);border-radius:8px;margin-bottom:12px;font-style:italic;}
+.req-message:empty{display:none;}
+.req-date{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mu);margin-bottom:12px;}
+
+/* review form */
+.review-form{border-top:1px solid rgba(14,165,233,.08);padding:14px 18px;}
+.review-form label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:6px;}
+.review-form textarea{width:100%;background:rgba(6,13,26,.9);border:1px solid rgba(14,165,233,.12);border-radius:10px;color:var(--tx);padding:10px 13px;font-family:'Space Grotesk',sans-serif;font-size:.85rem;outline:none;transition:border-color .25s;resize:vertical;min-height:80px;margin-bottom:10px;}
+.review-form textarea:focus{border-color:rgba(14,165,233,.38);}
+.review-form textarea::placeholder{color:#1b3047;}
+.btn-row{display:flex;gap:8px;}
+.btn-submit{flex:1;height:40px;background:linear-gradient(135deg,var(--sky),#0284c7);border:none;border-radius:9px;color:white;font-family:'Outfit',sans-serif;font-weight:700;font-size:.84rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(14,165,233,.35);}
+.btn-decline{height:40px;padding:0 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:9px;color:#f87171;font-family:'Outfit',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .25s;}
+.btn-decline:hover{background:rgba(239,68,68,.18);}
+
+/* reviewed card */
+.req-note{padding:12px 14px;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.15);border-radius:10px;font-size:.84rem;color:#86efac;line-height:1.65;}
+.req-note-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#34d399;margin-bottom:6px;}
+
+.empty{text-align:center;padding:48px 24px;color:var(--mu);}
+.empty i{font-size:2.2rem;opacity:.25;margin-bottom:12px;display:block;}
+
+@media(max-width:700px){.pg{padding:24px 16px;}.req-grid{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div>
+<div class="pg">
+
+    <div class="pg-hdr">
+        <div>
+            <div class="pg-eyebrow"><i class="fas fa-comments-medical"></i> Doctor Portal</div>
+            <h1 class="pg-title">Review Requests</h1>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('pending',this)">
+            <i class="fas fa-clock"></i> Pending
+            <span class="tab-count orange">{{ pending|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('accepted',this)">
+            <i class="fas fa-circle-check"></i> Accepted
+            <span class="tab-count">{{ accepted|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('reviewed',this)">
+            <i class="fas fa-check-double"></i> Reviewed
+            <span class="tab-count">{{ reviewed|length }}</span>
+        </button>
+    </div>
+
+    <!-- PENDING -->
+    <div class="tab-panel active" id="tab-pending">
+        {% if pending %}
+        <div class="req-grid">
+            {% for req in pending %}
+            <div class="req-card urg-{{ req.urgency }}" style="animation-delay:{{ forloop.counter0 }}0ms;">
+                <div class="req-head">
+                    <div class="req-scan-img"><img src="{{ req.scan.image.url }}" alt="Scan"></div>
+                    <div>
+                        <div class="req-patient-name">{{ req.patient.get_full_name|default:req.patient.username }}</div>
+                        <div class="req-meta">{{ req.patient.email }}</div>
+                    </div>
+                    <div class="req-urg-badge urg-{{ req.urgency }}-b">{{ req.urgency }}</div>
+                </div>
+                <div class="req-body">
+                    <div class="req-diagnosis" style="{% if req.scan.predicted_class == 'normal' %}background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399;{% elif req.scan.predicted_class == 'COVID_19' %}background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;{% else %}background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#fb923c;{% endif %}">
+                        <i class="fas fa-{% if req.scan.predicted_class == 'normal' %}circle-check{% else %}virus{% endif %}"></i>
+                        {{ req.scan.predicted_label }}
+                    </div>
+                    {% if req.message %}
+                    <div class="req-message">"{{ req.message }}"</div>
+                    {% endif %}
+                    <div class="req-date"><i class="fas fa-calendar" style="margin-right:4px;"></i>Requested {{ req.created_at|date:"F j, Y · H:i" }}</div>
+                    <a href="{% url 'scan-detail' req.scan.pk %}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.18);border-radius:8px;color:var(--sky2);font-size:.76rem;font-weight:600;text-decoration:none;margin-bottom:12px;">
+                        <i class="fas fa-eye"></i> View Full Scan
+                    </a>
+                </div>
+                <div class="review-form">
+                    <form method="post" action="{% url 'review-opinion' req.pk %}">
+                        {% csrf_token %}
+                        <label>Your Review Note *</label>
+                        <textarea name="doctor_note" placeholder="Write your clinical assessment and recommendations for this patient…" required></textarea>
+                        <div class="btn-row">
+                            <button type="submit" name="action" value="review" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Review</button>
+                            <button type="submit" name="action" value="decline" class="btn-decline"><i class="fas fa-xmark"></i> Decline</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty"><i class="fas fa-inbox"></i><p>No pending review requests.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- ACCEPTED (not yet reviewed) -->
+    <div class="tab-panel" id="tab-accepted">
+        {% if accepted %}
+        <div class="req-grid">{% for req in accepted %}
+            <div class="req-card urg-{{ req.urgency }}">
+                <div class="req-head">
+                    <div class="req-scan-img"><img src="{{ req.scan.image.url }}" alt="Scan"></div>
+                    <div><div class="req-patient-name">{{ req.patient.get_full_name|default:req.patient.username }}</div><div class="req-meta">{{ req.scan.predicted_label }}</div></div>
+                    <div class="req-urg-badge urg-{{ req.urgency }}-b">{{ req.urgency }}</div>
+                </div>
+                <div class="req-body">
+                    {% if req.message %}<div class="req-message">"{{ req.message }}"</div>{% endif %}
+                    <div class="req-date">Requested {{ req.created_at|date:"F j, Y" }}</div>
+                </div>
+                <div class="review-form">
+                    <form method="post" action="{% url 'review-opinion' req.pk %}">
+                        {% csrf_token %}
+                        <label>Your Review Note *</label>
+                        <textarea name="doctor_note" placeholder="Write your clinical assessment…" required></textarea>
+                        <div class="btn-row"><button type="submit" name="action" value="review" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Review</button></div>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}</div>
+        {% else %}
+        <div class="empty"><i class="fas fa-hourglass"></i><p>No accepted requests pending review.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- REVIEWED -->
+    <div class="tab-panel" id="tab-reviewed">
+        {% if reviewed %}
+        <div class="req-grid">{% for req in reviewed %}
+            <div class="req-card urg-{{ req.urgency }}">
+                <div class="req-head">
+                    <div class="req-scan-img"><img src="{{ req.scan.image.url }}" alt="Scan"></div>
+                    <div><div class="req-patient-name">{{ req.patient.get_full_name|default:req.patient.username }}</div><div class="req-meta">{{ req.scan.predicted_label }}</div></div>
+                    <span style="margin-left:auto;padding:4px 10px;border-radius:7px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;">REVIEWED</span>
+                </div>
+                <div class="req-body">
+                    {% if req.message %}<div class="req-message">"{{ req.message }}"</div>{% endif %}
+                    <div class="req-note">
+                        <div class="req-note-lbl"><i class="fas fa-circle-check"></i> Your Review</div>
+                        {{ req.doctor_note }}
+                    </div>
+                    <div class="req-date" style="margin-top:8px;">Reviewed {{ req.reviewed_at|date:"F j, Y · H:i" }}</div>
+                </div>
+            </div>
+        {% endfor %}</div>
+        {% else %}
+        <div class="empty"><i class="fas fa-check-double"></i><p>No reviewed requests yet.</p></div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(name, btn){
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+{% endblock %}

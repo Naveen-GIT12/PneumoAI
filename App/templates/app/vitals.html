@@ -1,0 +1,276 @@
+{% extends "users/base.html" %}
+{% block title %}Vitals Tracker — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+space grotesk+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--org:#f97316;--grn:#10b981;--red:#ef4444;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(ellipse 50% 45% at 92% 72%,rgba(249,115,22,.06) 0%,transparent 50%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+.pg{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Space Grotesk',sans-serif;}
+.pg-hdr{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px;animation:fadeUp .7s ease both;}
+.pg-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pg-eyebrow::before{content:'';width:22px;height:1px;background:var(--sky);}
+.pg-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;}
+
+.main-grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start;}
+@media(max-width:960px){.main-grid{grid-template-columns:1fr;}}
+
+/* card */
+.rc{position:relative;overflow:hidden;background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:20px;backdrop-filter:blur(16px);animation:fadeUp .7s ease both;}
+.rc-head{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid rgba(14,165,233,.08);position:relative;z-index:2;}
+.rc-ico{width:28px;height:28px;border-radius:8px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--sky);flex-shrink:0;}
+.rc-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);}
+.rc-body{padding:16px 20px;position:relative;z-index:2;}
+
+/* form */
+.field-group{margin-bottom:13px;}
+.field-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:5px;}
+.field-input{width:100%;background:rgba(6,13,26,.9);border:1px solid rgba(14,165,233,.12);border-radius:10px;color:var(--tx);padding:9px 12px;font-family:'Space Grotesk',sans-serif;font-size:.86rem;outline:none;transition:border-color .25s;}
+.field-input:focus{border-color:rgba(14,165,233,.38);}
+.field-input::placeholder{color:#1b3047;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+textarea.field-input{resize:vertical;min-height:60px;}
+.submit-btn{width:100%;height:48px;background:linear-gradient(135deg,var(--sky),#0284c7);border:none;border-radius:11px;color:white;font-family:'Outfit',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .28s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;position:relative;overflow:hidden;}
+.submit-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);transform:translateX(-100%);transition:transform .55s;}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(14,165,233,.35);}
+.submit-btn:hover::before{transform:translateX(100%);}
+
+/* normal ranges info */
+.ref-box{padding:12px 14px;background:rgba(14,165,233,.04);border:1px solid rgba(14,165,233,.1);border-radius:10px;margin-top:14px;}
+.ref-title{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--sky);margin-bottom:8px;}
+.ref-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(14,165,233,.06);font-size:.78rem;}
+.ref-item:last-child{border:none;}
+.ref-k{color:var(--mu2);}
+.ref-v{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--sky3,#7dd3fc);}
+
+/* right: chart + history table */
+.right-col{display:flex;flex-direction:column;gap:18px;}
+.chart-card{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:20px;backdrop-filter:blur(14px);}
+.chart-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(14,165,233,.1);}
+canvas{max-height:200px;}
+
+/* latest readings */
+.readings-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.reading-chip{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;text-align:center;backdrop-filter:blur(14px);transition:border-color .3s;}
+.reading-chip:hover{border-color:rgba(14,165,233,.25);}
+.reading-ico{font-size:1.2rem;margin-bottom:8px;}
+.reading-val{font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:white;margin-bottom:3px;}
+.reading-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);}
+.reading-status{font-size:.7rem;font-weight:600;margin-top:4px;}
+.st-normal{color:#34d399;} .st-low{color:var(--org);} .st-critical{color:var(--red);}
+
+/* history table */
+.hist-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.hist-table th{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);padding:8px 12px;border-bottom:1px solid rgba(14,165,233,.1);text-align:left;}
+.hist-table td{padding:9px 12px;border-bottom:1px solid rgba(14,165,233,.05);color:var(--tx2);}
+.hist-table tr:hover td{background:rgba(14,165,233,.02);}
+.hist-table tr:last-child td{border:none;}
+.val-normal{color:#34d399;font-weight:600;} .val-warn{color:var(--org);font-weight:600;} .val-crit{color:var(--red);font-weight:600;}
+
+@media(max-width:700px){.pg{padding:24px 16px;}.readings-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div>
+<div class="pg">
+
+    <div class="pg-hdr">
+        <div>
+            <div class="pg-eyebrow"><i class="fas fa-heart-pulse"></i> Health Monitoring</div>
+            <h1 class="pg-title">Vitals Tracker</h1>
+        </div>
+        {% if history %}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--mu2);background:rgba(14,165,233,.07);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;">
+            {{ history|length }} Reading{{ history|length|pluralize }} Recorded
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Latest readings summary -->
+    {% if history %}
+    {% with latest=history.0 %}
+    <div class="readings-row">
+        <div class="reading-chip">
+            <div class="reading-ico" style="color:#ef4444;">🌡️</div>
+            <div class="reading-val" style="{% if latest.temperature %}{% if latest.temperature >= 38 %}color:#f87171;{% elif latest.temperature < 36 %}color:var(--sky2);{% endif %}{% endif %}">
+                {{ latest.temperature|default:"—" }}{% if latest.temperature %}°C{% endif %}
+            </div>
+            <div class="reading-lbl">Temperature</div>
+            {% if latest.temperature %}
+            <div class="reading-status {% if latest.temperature >= 38 %}st-critical{% elif latest.temperature < 36 %}st-low{% else %}st-normal{% endif %}">
+                {% if latest.temperature >= 38 %}Fever{% elif latest.temperature < 36 %}Low{% else %}Normal{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="reading-chip">
+            <div class="reading-ico" style="color:#38bdf8;">💙</div>
+            <div class="reading-val" style="{% if latest.spo2 %}{% if latest.spo2 < 90 %}color:#f87171;{% elif latest.spo2 < 95 %}color:var(--org);{% else %}color:#34d399;{% endif %}{% endif %}">
+                {{ latest.spo2|default:"—" }}{% if latest.spo2 %}%{% endif %}
+            </div>
+            <div class="reading-lbl">SpO₂</div>
+            {% if latest.spo2 %}
+            <div class="reading-status {% if latest.spo2 < 90 %}st-critical{% elif latest.spo2 < 95 %}st-low{% else %}st-normal{% endif %}">
+                {{ latest.spo2_status|title }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="reading-chip">
+            <div class="reading-ico" style="color:#f87171;">❤️</div>
+            <div class="reading-val">{{ latest.heart_rate|default:"—" }}{% if latest.heart_rate %}<span style="font-size:.9rem;font-weight:500;color:var(--mu2);"> bpm</span>{% endif %}</div>
+            <div class="reading-lbl">Heart Rate</div>
+            {% if latest.heart_rate %}
+            <div class="reading-status {% if latest.heart_rate < 60 or latest.heart_rate > 100 %}st-low{% else %}st-normal{% endif %}">
+                {% if latest.heart_rate < 60 %}Bradycardia{% elif latest.heart_rate > 100 %}Tachycardia{% else %}Normal{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="reading-chip">
+            <div class="reading-ico" style="color:#10b981;">🫁</div>
+            <div class="reading-val">{{ latest.respiratory_rate|default:"—" }}{% if latest.respiratory_rate %}<span style="font-size:.9rem;font-weight:500;color:var(--mu2);"> /min</span>{% endif %}</div>
+            <div class="reading-lbl">Resp. Rate</div>
+            {% if latest.respiratory_rate %}
+            <div class="reading-status {% if latest.respiratory_rate < 12 or latest.respiratory_rate > 20 %}st-low{% else %}st-normal{% endif %}">
+                {% if latest.respiratory_rate < 12 or latest.respiratory_rate > 20 %}Abnormal{% else %}Normal{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endwith %}
+    {% endif %}
+
+    <div class="main-grid">
+
+        <!-- LEFT: Log new vitals -->
+        <div>
+            <div class="rc">
+                <div class="rc-head"><div class="rc-ico"><i class="fas fa-plus"></i></div><span class="rc-lbl">Log New Reading</span></div>
+                <div class="rc-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label class="field-label">Temperature (°C)</label>
+                                <input type="number" name="temperature" step="0.1" class="field-input" placeholder="37.0" min="30" max="45">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">SpO₂ (%)</label>
+                                <input type="number" name="spo2" step="0.1" class="field-input" placeholder="98.5" min="50" max="100">
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label class="field-label">Heart Rate (BPM)</label>
+                                <input type="number" name="heart_rate" class="field-input" placeholder="72" min="30" max="250">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Resp. Rate (/min)</label>
+                                <input type="number" name="respiratory_rate" class="field-input" placeholder="16" min="5" max="60">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Blood Pressure (mmHg)</label>
+                            <input type="text" name="blood_pressure" class="field-input" placeholder="120/80">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Notes</label>
+                            <textarea name="notes" class="field-input" placeholder="Any symptoms, medication taken, activity level…"></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn"><i class="fas fa-plus"></i> Save Reading</button>
+                    </form>
+
+                    <div class="ref-box">
+                        <div class="ref-title"><i class="fas fa-circle-info"></i> Normal Ranges</div>
+                        <div class="ref-item"><span class="ref-k">Temperature</span><span class="ref-v">36.1 – 37.2°C</span></div>
+                        <div class="ref-item"><span class="ref-k">SpO₂</span><span class="ref-v">≥ 95%</span></div>
+                        <div class="ref-item"><span class="ref-k">Heart Rate</span><span class="ref-v">60 – 100 bpm</span></div>
+                        <div class="ref-item"><span class="ref-k">Respiratory Rate</span><span class="ref-v">12 – 20 /min</span></div>
+                        <div class="ref-item"><span class="ref-k">Blood Pressure</span><span class="ref-v">&lt; 120/80 mmHg</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Charts + History -->
+        <div class="right-col">
+            {% if history %}
+            <!-- SpO2 + Heart rate chart -->
+            <div class="chart-card">
+                <div class="chart-title"><i class="fas fa-wave-square"></i> SpO₂ & Heart Rate Trend</div>
+                <canvas id="vitalsChart"></canvas>
+            </div>
+
+            <!-- History table -->
+            <div class="rc">
+                <div class="rc-head"><div class="rc-ico"><i class="fas fa-table"></i></div><span class="rc-lbl">Reading History</span></div>
+                <div style="overflow-x:auto;">
+                    <table class="hist-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Temp (°C)</th>
+                                <th>SpO₂ (%)</th>
+                                <th>HR (bpm)</th>
+                                <th>RR (/min)</th>
+                                <th>BP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in history %}
+                            <tr>
+                                <td>{{ v.recorded_at|date:"d M Y · H:i" }}</td>
+                                <td class="{% if v.temperature %}{% if v.temperature >= 38 %}val-crit{% elif v.temperature < 36 %}val-warn{% else %}val-normal{% endif %}{% endif %}">{{ v.temperature|default:"—" }}</td>
+                                <td class="{% if v.spo2 %}{% if v.spo2 < 90 %}val-crit{% elif v.spo2 < 95 %}val-warn{% else %}val-normal{% endif %}{% endif %}">{{ v.spo2|default:"—" }}</td>
+                                <td class="{% if v.heart_rate %}{% if v.heart_rate < 60 or v.heart_rate > 100 %}val-warn{% else %}val-normal{% endif %}{% endif %}">{{ v.heart_rate|default:"—" }}</td>
+                                <td class="{% if v.respiratory_rate %}{% if v.respiratory_rate < 12 or v.respiratory_rate > 20 %}val-warn{% else %}val-normal{% endif %}{% endif %}">{{ v.respiratory_rate|default:"—" }}</td>
+                                <td>{{ v.blood_pressure|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:60px 24px;background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;">
+                <i class="fas fa-heart-pulse" style="font-size:2.5rem;color:rgba(14,165,233,.25);margin-bottom:14px;display:block;"></i>
+                <p style="color:var(--mu);font-size:.9rem;margin-bottom:6px;">No vitals recorded yet.</p>
+                <p style="color:#2d4a62;font-size:.8rem;">Log your first reading using the form on the left.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if history %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color='#5a7fa0';
+Chart.defaults.borderColor='rgba(14,165,233,0.08)';
+new Chart(document.getElementById('vitalsChart'),{
+    type:'line',
+    data:{
+        labels:{{ date_labels|safe }},
+        datasets:[
+            {label:'SpO₂ (%)',data:{{ spo2_data|safe }},borderColor:'rgba(14,165,233,1)',backgroundColor:'rgba(14,165,233,0.1)',fill:true,tension:.4,pointRadius:4,yAxisID:'y'},
+            {label:'Heart Rate (bpm)',data:{{ hr_data|safe }},borderColor:'rgba(239,68,68,0.8)',backgroundColor:'rgba(239,68,68,0.05)',fill:false,tension:.4,pointRadius:4,yAxisID:'y1'},
+        ]
+    },
+    options:{
+        plugins:{legend:{labels:{boxWidth:12,font:{size:10,family:'JetBrains Mono'}}}},
+        scales:{
+            y:{position:'left',min:85,max:100,grid:{color:'rgba(14,165,233,0.06)'},title:{display:true,text:'SpO₂ %',font:{size:9}}},
+            y1:{position:'right',beginAtZero:false,grid:{drawOnChartArea:false},title:{display:true,text:'BPM',font:{size:9}}},
+            x:{grid:{display:false},ticks:{maxRotation:30,font:{size:9}}}
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

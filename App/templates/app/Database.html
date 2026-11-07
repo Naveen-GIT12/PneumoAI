@@ -1,0 +1,532 @@
+{% extends "users/base.html" %}
+{% block title %}Database — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --sky:   #0ea5e9;
+        --sky2:  #38bdf8;
+        --skyd:  #0284c7;
+        --org:   #f97316;
+        --dark:  #060d1a;
+        --dark2: #0c1629;
+        --dark3: #111e35;
+        --border: rgba(14,165,233,0.13);
+        --muted: #4a637d;
+        --text:  #cfe4f5;
+    }
+
+    /* ── BACKGROUND ── */
+    .db-bg {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background:
+            radial-gradient(ellipse 65% 50% at 10% 40%, rgba(14,165,233,0.09) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 40% at 92% 70%, rgba(249,115,22,0.06) 0%, transparent 50%);
+    }
+    .db-mesh {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background-image:
+            linear-gradient(rgba(14,165,233,0.034) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(14,165,233,0.034) 1px, transparent 1px);
+        background-size: 55px 55px;
+        animation: meshDrift 30s linear infinite;
+    }
+    @keyframes meshDrift {
+        0%   { background-position: 0 0; }
+        100% { background-position: 55px 55px; }
+    }
+    .db-pts { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .dpt { position: absolute; border-radius: 50%; animation: ptRise linear infinite; }
+    @keyframes ptRise {
+        0%   { transform: translateY(110vh); opacity: 0; }
+        8%   { opacity: 1; }
+        92%  { opacity: 0.5; }
+        100% { transform: translateY(-10vh); opacity: 0; }
+    }
+
+    /* ── PAGE ── */
+    .db-page {
+        position: relative; z-index: 1;
+        padding: 44px 44px;
+    }
+
+    /* ── HEADER ── */
+    .db-header {
+        display: flex; align-items: flex-end; justify-content: space-between;
+        margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+        animation: fadeUp 0.7s ease both;
+    }
+    @keyframes fadeUp {
+        from { opacity:0; transform: translateY(22px); }
+        to   { opacity:1; transform: translateY(0); }
+    }
+
+    .db-eyebrow {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 2.5px;
+        text-transform: uppercase; color: var(--sky);
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 8px;
+    }
+    .db-eyebrow::before { content:''; width:22px; height:2px; background:var(--sky); }
+
+    .db-title {
+        font-family: 'DM Serif Display', serif;
+        font-size: 2.2rem; color: white; line-height: 1.1;
+    }
+
+    .db-count {
+        display: inline-flex; align-items: center; gap: 9px;
+        background: rgba(14,165,233,0.08);
+        border: 1px solid rgba(14,165,233,0.18);
+        border-radius: 12px; padding: 10px 18px;
+        font-size: 0.84rem; font-weight: 600; color: var(--sky2);
+        animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .db-count i { color: var(--sky); }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+        display: flex; gap: 8px; flex-wrap: wrap;
+        margin-bottom: 28px;
+        animation: fadeUp 0.7s 0.15s ease both;
+    }
+
+    .filter-btn {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border-radius: 100px;
+        border: 1px solid rgba(14,165,233,0.13);
+        background: rgba(10,18,32,0.7);
+        color: var(--muted);
+        font-size: 0.8rem; font-weight: 600;
+        cursor: pointer; transition: all 0.25s;
+        font-family: 'Outfit', sans-serif;
+        position: relative; overflow: hidden;
+    }
+    .filter-btn::before {
+        content: '';
+        position: absolute; inset: 0; opacity: 0;
+        transition: opacity 0.25s;
+    }
+    .filter-btn:hover { color: var(--sky2); border-color: rgba(14,165,233,0.3); }
+
+    .filter-btn.active {
+        background: rgba(14,165,233,0.12);
+        border-color: rgba(14,165,233,0.35);
+        color: var(--sky2);
+        box-shadow: 0 4px 14px rgba(14,165,233,0.15);
+    }
+
+    /* per-category active colours */
+    .filter-btn[data-cat="COVID_19"].active          { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.35); color:#f87171; box-shadow:0 4px 14px rgba(239,68,68,0.12); }
+    .filter-btn[data-cat="normal"].active            { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.35); color:#4ade80; box-shadow:0 4px 14px rgba(34,197,94,0.12); }
+    .filter-btn[data-cat="Pneumonia_Bacterial"].active { background:rgba(249,115,22,0.12); border-color:rgba(249,115,22,0.35); color:#fb923c; box-shadow:0 4px 14px rgba(249,115,22,0.12); }
+    .filter-btn[data-cat="Pneumonia_Viral"].active   { background:rgba(14,165,233,0.12); border-color:rgba(14,165,233,0.35); color:var(--sky2); }
+    .filter-btn[data-cat="opacity"].active           { background:rgba(139,92,246,0.12); border-color:rgba(139,92,246,0.35); color:#a78bfa; box-shadow:0 4px 14px rgba(139,92,246,0.12); }
+
+    /* ── SEARCH BAR ── */
+    .search-wrap {
+        margin-bottom: 24px;
+        animation: fadeUp 0.7s 0.2s ease both;
+        max-width: 360px;
+    }
+    .search-shell {
+        display: flex; align-items: center;
+        height: 44px;
+        background: rgba(10,18,32,0.8);
+        border: 1px solid var(--border);
+        border-radius: 10px; overflow: hidden;
+        transition: all 0.25s;
+    }
+    .search-shell:focus-within {
+        border-color: rgba(14,165,233,0.38);
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.07);
+    }
+    .search-shell i {
+        width: 40px; text-align: center;
+        color: rgba(14,165,233,0.35); font-size: 0.85rem;
+        flex-shrink: 0; transition: color 0.25s;
+    }
+    .search-shell:focus-within i { color: var(--sky); }
+    .search-shell input {
+        flex:1; background:none; border:none; outline:none;
+        color: var(--text); font-family:'Outfit',sans-serif;
+        font-size: 0.88rem; padding-right: 12px;
+    }
+    .search-shell input::placeholder { color: #1b3047; }
+
+    /* ── GRID ── */
+    .db-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 18px;
+    }
+
+    /* ── CARD ── */
+    .db-card {
+        background: rgba(10,18,32,0.8);
+        border: 1px solid var(--border);
+        border-radius: 16px; overflow: hidden;
+        cursor: pointer; position: relative;
+        transition: all 0.32s cubic-bezier(0.34,1.56,0.64,1);
+        animation: cardIn 0.5s ease both;
+        backdrop-filter: blur(10px);
+    }
+    @keyframes cardIn {
+        from { opacity:0; transform: translateY(18px) scale(0.97); }
+        to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+    .db-card:hover {
+        transform: translateY(-8px) scale(1.01);
+        border-color: rgba(14,165,233,0.3);
+        box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(14,165,233,0.1);
+    }
+
+    /* coloured top accent per label */
+    .db-card::before {
+        content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+        opacity: 0; transition: opacity 0.3s;
+    }
+    .db-card:hover::before { opacity: 1; }
+    .db-card[data-label="COVID_19"]::before            { background: linear-gradient(90deg,#ef4444,#f97316); }
+    .db-card[data-label="normal"]::before              { background: linear-gradient(90deg,#22c55e,#10b981); }
+    .db-card[data-label="Pneumonia_Bacterial"]::before { background: linear-gradient(90deg,#f97316,#eab308); }
+    .db-card[data-label="Pneumonia_Viral"]::before     { background: linear-gradient(90deg,#0ea5e9,#06b6d4); }
+    .db-card[data-label="opacity"]::before             { background: linear-gradient(90deg,#8b5cf6,#6366f1); }
+
+    .db-card-img-wrap {
+        overflow: hidden; position: relative;
+        height: 190px;
+    }
+    .db-card-img {
+        width: 100%; height: 100%;
+        object-fit: cover; display: block;
+        filter: brightness(0.88);
+        transition: all 0.4s ease;
+    }
+    .db-card:hover .db-card-img { filter: brightness(1.05); transform: scale(1.06); }
+
+    /* zoom icon overlay */
+    .card-zoom {
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(14,165,233,0.25);
+        backdrop-filter: blur(2px);
+        opacity: 0; transition: opacity 0.3s;
+    }
+    .db-card:hover .card-zoom { opacity: 1; }
+    .card-zoom i {
+        font-size: 2rem; color: white;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+        transform: scale(0.7); transition: transform 0.3s;
+    }
+    .db-card:hover .card-zoom i { transform: scale(1); }
+
+    .db-card-body {
+        padding: 14px 16px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* label badges */
+    .db-label {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 5px 11px; border-radius: 100px;
+        font-size: 0.74rem; font-weight: 700;
+        letter-spacing: 0.4px; text-transform: uppercase;
+    }
+    .lbl-covid    { background:rgba(239,68,68,0.14); color:#f87171; border:1px solid rgba(239,68,68,0.22); }
+    .lbl-normal   { background:rgba(34,197,94,0.14); color:#4ade80; border:1px solid rgba(34,197,94,0.22); }
+    .lbl-opacity  { background:rgba(139,92,246,0.14); color:#a78bfa; border:1px solid rgba(139,92,246,0.22); }
+    .lbl-bacterial{ background:rgba(249,115,22,0.14); color:#fb923c; border:1px solid rgba(249,115,22,0.22); }
+    .lbl-viral    { background:rgba(14,165,233,0.14); color:var(--sky2); border:1px solid rgba(14,165,233,0.22); }
+    .lbl-default  { background:rgba(148,163,184,0.14); color:#94a3b8; border:1px solid rgba(148,163,184,0.22); }
+
+    .card-arrow {
+        width: 28px; height: 28px; border-radius: 8px;
+        background: rgba(14,165,233,0.08);
+        display: flex; align-items: center; justify-content: center;
+        color: rgba(14,165,233,0.4); font-size: 0.7rem;
+        transition: all 0.25s;
+    }
+    .db-card:hover .card-arrow {
+        background: rgba(14,165,233,0.18);
+        color: var(--sky);
+        transform: translateX(3px);
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+        grid-column: 1/-1;
+        text-align: center; padding: 80px 24px;
+        animation: fadeUp 0.6s ease both;
+    }
+    .empty-icon {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: rgba(14,165,233,0.06);
+        border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 1.8rem; color: rgba(14,165,233,0.3);
+    }
+    .empty-state h3 { font-size: 1.15rem; color: var(--muted); margin-bottom: 8px; }
+    .empty-state p  { font-size: 0.85rem; color: #2d4a62; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(12px);
+        z-index: 9999; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open {
+        display: flex;
+        animation: modalIn 0.3s ease;
+    }
+    @keyframes modalIn {
+        from { opacity:0; }
+        to   { opacity:1; }
+    }
+
+    .modal-box {
+        max-width: 640px; width: 92%;
+        background: rgba(10,18,32,0.95);
+        border: 1px solid var(--border);
+        border-radius: 20px; overflow: hidden;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+        animation: modalBoxIn 0.35s cubic-bezier(0.16,1,0.3,1);
+        position: relative;
+    }
+    @keyframes modalBoxIn {
+        from { opacity:0; transform: scale(0.92) translateY(20px); }
+        to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+
+    /* corner brackets on modal */
+    .mcrn { position:absolute; width:24px; height:24px; opacity:0.4; z-index:2; }
+    .mcrn-tl { top:10px; left:10px; border-top:2px solid var(--sky); border-left:2px solid var(--sky); }
+    .mcrn-tr { top:10px; right:10px; border-top:2px solid var(--sky); border-right:2px solid var(--sky); }
+    .mcrn-bl { bottom:10px; left:10px; border-bottom:2px solid var(--sky); border-left:2px solid var(--sky); }
+    .mcrn-br { bottom:10px; right:10px; border-bottom:2px solid var(--sky); border-right:2px solid var(--sky); }
+
+    .modal-img { width:100%; display:block; max-height: 500px; object-fit: contain; background:#000; }
+
+    .modal-footer {
+        padding: 14px 18px;
+        display: flex; align-items: center; justify-content: space-between;
+        border-top: 1px solid var(--border);
+    }
+    .modal-label { font-size: 0.82rem; font-weight: 600; }
+
+    .modal-close {
+        width: 36px; height: 36px; border-radius: 9px;
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.2);
+        color: #f87171; font-size: 0.9rem;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(239,68,68,0.25); color: white; }
+
+    /* scan line inside modal */
+    .modal-scan {
+        position: absolute; left:0; right:0; height:1px;
+        background: linear-gradient(90deg,transparent,rgba(14,165,233,0.6),transparent);
+        animation: beamDown 3.5s ease-in-out infinite;
+        pointer-events: none; z-index: 3;
+    }
+    @keyframes beamDown {
+        0%   { top:0; opacity:0; }
+        5%   { opacity:1; }
+        95%  { opacity:1; }
+        100% { top:100%; opacity:0; }
+    }
+
+    @media (max-width: 700px) {
+        .db-page { padding: 24px 16px; }
+        .db-title { font-size: 1.7rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-bg"></div>
+<div class="db-mesh"></div>
+<div class="db-pts" id="dbpts"></div>
+
+<div class="db-page">
+
+    <!-- HEADER -->
+    <div class="db-header">
+        <div>
+            <div class="db-eyebrow"><i class="fas fa-database"></i> Records</div>
+            <h1 class="db-title">Detection Database</h1>
+        </div>
+        <div class="db-count">
+            <i class="fas fa-database"></i>
+            <span id="visibleCount">{{ models|length }}</span> Records
+        </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+        <div class="search-shell">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search by label…" oninput="doSearch(this.value)"/>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <button class="filter-btn active" data-cat="all"                onclick="filterCards('all',this)"><i class="fas fa-border-all"></i> All</button>
+        <button class="filter-btn" data-cat="COVID_19"                  onclick="filterCards('COVID_19',this)"><i class="fas fa-virus"></i> COVID-19</button>
+        <button class="filter-btn" data-cat="normal"                    onclick="filterCards('normal',this)"><i class="fas fa-circle-check"></i> Normal</button>
+        <button class="filter-btn" data-cat="Pneumonia_Bacterial"       onclick="filterCards('Pneumonia_Bacterial',this)"><i class="fas fa-circle-radiation"></i> Bacterial</button>
+        <button class="filter-btn" data-cat="Pneumonia_Viral"           onclick="filterCards('Pneumonia_Viral',this)"><i class="fas fa-virus"></i> Viral</button>
+        <button class="filter-btn" data-cat="opacity"                   onclick="filterCards('opacity',this)"><i class="fas fa-eye"></i> Opacity</button>
+    </div>
+
+    <!-- GRID -->
+    {% if models %}
+    <div class="db-grid" id="dbGrid">
+        {% for model in models %}
+        {% if model.image %}
+        <div class="db-card"
+             data-label="{{ model.label }}"
+             style="animation-delay: {{ forloop.counter0 }}00ms;"
+             onclick="openModal('{{ model.image.url }}','{{ model.label }}')">
+
+            <div class="db-card-img-wrap">
+                <img src="{{ model.image.url }}" alt="X-Ray" class="db-card-img" loading="lazy">
+                <div class="card-zoom"><i class="fas fa-magnifying-glass-plus"></i></div>
+            </div>
+            <div class="db-card-body">
+                <span class="db-label
+                    {% if model.label == 'COVID_19' %}lbl-covid
+                    {% elif model.label == 'normal' %}lbl-normal
+                    {% elif model.label == 'opacity' %}lbl-opacity
+                    {% elif model.label == 'Pneumonia_Bacterial' %}lbl-bacterial
+                    {% elif model.label == 'Pneumonia_Viral' %}lbl-viral
+                    {% else %}lbl-default{% endif %}">
+                    <i class="fas fa-{% if model.label == 'normal' %}circle-check{% elif model.label == 'COVID_19' %}virus{% elif model.label == 'opacity' %}eye{% else %}bacterium{% endif %}"></i>
+                    {{ model.label|default:"Unknown" }}
+                </span>
+                <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        <div class="empty-state" id="noResults" style="display:none;">
+            <div class="empty-icon"><i class="fas fa-magnifying-glass"></i></div>
+            <h3>No matches found</h3>
+            <p>Try a different filter or search term.</p>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="db-grid">
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+            <h3>No Records Yet</h3>
+            <p>Upload and analyse chest X-rays to see them here.</p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-scan"></div>
+        <div class="mcrn mcrn-tl"></div><div class="mcrn mcrn-tr"></div>
+        <div class="mcrn mcrn-bl"></div><div class="mcrn mcrn-br"></div>
+        <img id="modalImg" class="modal-img" src="" alt="X-Ray"/>
+        <div class="modal-footer">
+            <span class="modal-label" id="modalLabel"></span>
+            <button class="modal-close" onclick="closeModal()"><i class="fas fa-xmark"></i></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ── Particles
+    const dbpts = document.getElementById('dbpts');
+    for (let i = 0; i < 14; i++) {
+        const d = document.createElement('div');
+        d.className = 'dpt';
+        const sz = Math.random() * 5 + 2;
+        d.style.cssText = `
+            width:${sz}px; height:${sz}px;
+            left:${Math.random()*100}%;
+            animation-duration:${Math.random()*18+10}s;
+            animation-delay:-${Math.random()*18}s;
+            background:rgba(14,165,233,${(Math.random()*0.14+0.03).toFixed(2)});
+        `;
+        dbpts.appendChild(d);
+    }
+
+    // ── Active filter
+    let activeFilter = 'all';
+    let searchTerm   = '';
+
+    function updateCards() {
+        const cards = document.querySelectorAll('.db-card[data-label]');
+        let visible = 0;
+        cards.forEach(card => {
+            const lbl    = card.dataset.label.toLowerCase();
+            const matchF = activeFilter === 'all' || card.dataset.label === activeFilter;
+            const matchS = lbl.includes(searchTerm.toLowerCase());
+            const show   = matchF && matchS;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        document.getElementById('visibleCount').textContent = visible;
+        const noRes = document.getElementById('noResults');
+        if (noRes) noRes.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    function filterCards(label, btn) {
+        activeFilter = label;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateCards();
+    }
+
+    function doSearch(val) {
+        searchTerm = val;
+        updateCards();
+    }
+
+    // ── Modal
+    const labelMap = {
+        'COVID_19':           { cls:'lbl-covid',    icon:'fa-virus',        txt:'COVID-19' },
+        'normal':             { cls:'lbl-normal',   icon:'fa-circle-check', txt:'Normal' },
+        'Pneumonia_Bacterial':{ cls:'lbl-bacterial',icon:'fa-circle-radiation',    txt:'Bacterial Pneumonia' },
+        'Pneumonia_Viral':    { cls:'lbl-viral',    icon:'fa-virus',  txt:'Viral Pneumonia' },
+        'opacity':            { cls:'lbl-opacity',  icon:'fa-eye',          txt:'Lung Opacity' },
+    };
+
+    function openModal(url, label) {
+        document.getElementById('modalImg').src = url;
+        const info = labelMap[label] || { cls:'lbl-default', icon:'fa-question', txt: label };
+        document.getElementById('modalLabel').innerHTML =
+            `<span class="db-label ${info.cls}"><i class="fas ${info.icon}"></i> ${info.txt}</span>`;
+        document.getElementById('modalOverlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    // ── Stagger card animations on load
+    document.querySelectorAll('.db-card').forEach((card, i) => {
+        card.style.animationDelay = `${i * 60}ms`;
+    });
+</script>
+{% endblock %}

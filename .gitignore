@@ -1,0 +1,15 @@
+venv/
+venv311/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+db.sqlite3
+*.sqlite3
+media/
+profile_images/
+staticfiles/
+.vscode/
+.pytest_cache/
+.DS_Store

@@ -1,0 +1,204 @@
+{% extends "users/base.html" %}
+{% block title %}Scan History — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--skyd:#0284c7;--org:#f97316;--em:#06b6d4;--grn:#10b981;--c0:#03080f;--bd:rgba(14,165,233,0.12);--bd2:rgba(14,165,233,0.25);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 95% 75%,rgba(249,115,22,.06) 0%,transparent 55%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+.rp-pts{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.rpt{position:absolute;border-radius:50%;animation:ptF linear infinite;}
+@keyframes ptF{0%{transform:translateY(110vh);opacity:0;}8%{opacity:1;}92%{opacity:.55;}100%{transform:translateY(-5vh);opacity:0;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes beamDown{0%{top:0;opacity:0;}4%{opacity:1;}96%{opacity:1;}100%{top:100%;opacity:0;}}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+.hist-page{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Plus Jakarta Sans',sans-serif;}
+.hist-hdr{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px;animation:fadeUp .7s ease both;}
+.hist-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.hist-eyebrow::before{content:'';width:22px;height:1px;background:var(--sky);}
+.hist-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;}
+.hist-count{display:inline-flex;align-items:center;gap:8px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.18);border-radius:10px;padding:9px 16px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--sky2);font-weight:600;}
+
+/* filter bar */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:24px;animation:fadeUp .7s .1s ease both;}
+.filter-input{background:rgba(8,16,30,.85);border:1px solid var(--bd);border-radius:10px;color:var(--tx);padding:8px 13px;font-family:'JetBrains Mono',monospace;font-size:.72rem;outline:none;transition:border-color .25s;}
+.filter-input:focus{border-color:rgba(14,165,233,.38);}
+.filter-input::placeholder{color:var(--mu);}
+.filter-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--bd);background:rgba(8,16,30,.85);color:var(--mu2);font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:600;cursor:pointer;transition:all .25s;letter-spacing:.05em;text-transform:uppercase;}
+.filter-btn:hover,.filter-btn.active{background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.3);color:var(--sky2);}
+.filter-submit{padding:8px 18px;background:linear-gradient(135deg,var(--sky),var(--skyd));border:none;border-radius:10px;color:white;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .25s;}
+.filter-submit:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(14,165,233,.3);}
+
+/* grid */
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;}
+
+/* record card */
+.rec-card{position:relative;overflow:hidden;background:rgba(8,16,30,.85);border:1px solid var(--bd);border-radius:18px;backdrop-filter:blur(14px);transition:all .32s cubic-bezier(.34,1.56,.64,1);animation:cardIn .5s ease both;text-decoration:none;display:block;}
+.rec-card:hover{border-color:var(--bd2);transform:translateY(-7px) scale(1.01);box-shadow:0 20px 50px rgba(0,0,0,.4);text-decoration:none;}
+.rec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .3s;}
+.rec-card:hover::before{opacity:1;}
+.rec-card.cv::before{background:linear-gradient(90deg,#ef4444,#f97316);}
+.rec-card.bact::before{background:linear-gradient(90deg,#f97316,#eab308);}
+.rec-card.vir::before{background:linear-gradient(90deg,var(--sky),#06b6d4);}
+.rec-card.norm::before{background:linear-gradient(90deg,#22c55e,#10b981);}
+.rec-card.opac::before{background:linear-gradient(90deg,#8b5cf6,#6366f1);}
+
+.rec-img{position:relative;height:160px;background:#000;overflow:hidden;}
+.rec-img img{width:100%;height:100%;object-fit:contain;transition:transform .5s;filter:brightness(.85);}
+.rec-card:hover .rec-img img{transform:scale(1.05);filter:brightness(1);}
+.rec-img-scan{position:absolute;left:0;right:0;height:1.5px;background:linear-gradient(90deg,transparent,rgba(14,165,233,.7),transparent);animation:beamDown 3s ease-in-out infinite;pointer-events:none;}
+.rec-img-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(3,8,15,.6));pointer-events:none;}
+
+.rec-body{padding:14px 16px;}
+.rec-label{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;}
+.lbl-cv   {background:rgba(239,68,68,.12); color:#f87171;border:1px solid rgba(239,68,68,.22);}
+.lbl-bact {background:rgba(249,115,22,.12);color:#fb923c;border:1px solid rgba(249,115,22,.22);}
+.lbl-vir  {background:rgba(14,165,233,.12);color:var(--sky2);border:1px solid rgba(14,165,233,.22);}
+.lbl-norm {background:rgba(34,197,94,.12); color:#4ade80;border:1px solid rgba(34,197,94,.22);}
+.lbl-opac {background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.22);}
+
+.rec-date{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mu);margin-bottom:8px;}
+
+/* patient info strip (doctor only) */
+.rec-patient{padding:10px 12px;background:rgba(14,165,233,.04);border:1px solid rgba(14,165,233,.09);border-radius:9px;margin-bottom:10px;}
+.rec-patient-name{font-size:.88rem;font-weight:700;color:white;margin-bottom:2px;}
+.rec-patient-meta{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mu);display:flex;gap:10px;flex-wrap:wrap;}
+
+.rec-conf{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.rec-conf-track{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.rec-conf-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#22c55e,var(--sky));}
+.rec-conf-val{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--sky2);font-weight:600;white-space:nowrap;}
+
+.rec-actions{display:flex;gap:8px;}
+.rec-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .25s;border:1px solid;}
+.rec-btn-view{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.2);color:var(--sky2);}
+.rec-btn-view:hover{background:rgba(14,165,233,.18);border-color:rgba(14,165,233,.4);color:white;text-decoration:none;}
+.rec-btn-pdf{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#f87171;}
+.rec-btn-pdf:hover{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.4);color:white;text-decoration:none;}
+
+/* empty */
+.empty-state{grid-column:1/-1;text-align:center;padding:80px 24px;animation:fadeUp .6s ease both;}
+.empty-ico{width:80px;height:80px;border-radius:50%;background:rgba(14,165,233,.06);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:1.8rem;color:rgba(14,165,233,.35);}
+.empty-state h3{font-size:1.1rem;color:var(--mu);margin-bottom:8px;}
+.empty-state p{font-size:.84rem;color:#2d4a62;margin-bottom:20px;}
+.empty-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:linear-gradient(135deg,var(--sky),var(--skyd));border-radius:10px;color:white;font-weight:700;font-size:.88rem;text-decoration:none;transition:all .25s;}
+.empty-cta:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(14,165,233,.35);color:white;text-decoration:none;}
+
+@media(max-width:700px){.hist-page{padding:24px 16px;}.hist-grid{grid-template-columns:1fr;}.filter-bar{flex-direction:column;align-items:stretch;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div><div class="rp-pts" id="rpts"></div>
+<div class="hist-page">
+
+    <!-- Header -->
+    <div class="hist-hdr">
+        <div>
+            <div class="hist-eyebrow"><i class="fas fa-clock-rotate-left"></i> Records</div>
+            <h1 class="hist-title">{% if is_doctor %}Patient{% else %}My{% endif %} Scan History</h1>
+        </div>
+        <div class="hist-count"><i class="fas fa-database"></i> {{ records|length }} Records</div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="filter-bar">
+        {% if is_doctor %}
+        <input type="text" name="search" class="filter-input" placeholder="Search patient name / ID…" value="{{ search }}" style="min-width:200px;">
+        {% endif %}
+        <select name="label" class="filter-input">
+            <option value="">All Conditions</option>
+            <option value="COVID_19"            {% if label_filter == 'COVID_19' %}selected{% endif %}>COVID-19</option>
+            <option value="normal"              {% if label_filter == 'normal' %}selected{% endif %}>Normal</option>
+            <option value="Pneumonia_Bacterial" {% if label_filter == 'Pneumonia_Bacterial' %}selected{% endif %}>Bacterial Pneumonia</option>
+            <option value="Pneumonia_Viral"     {% if label_filter == 'Pneumonia_Viral' %}selected{% endif %}>Viral Pneumonia</option>
+            <option value="opacity"             {% if label_filter == 'opacity' %}selected{% endif %}>Lung Opacity</option>
+        </select>
+        <input type="date" name="date_from" class="filter-input" value="{{ date_from }}" title="From date">
+        <input type="date" name="date_to"   class="filter-input" value="{{ date_to }}"   title="To date">
+        <button type="submit" class="filter-submit"><i class="fas fa-filter"></i> Filter</button>
+        {% if label_filter or date_from or date_to or search %}
+        <a href="{% url 'scan-history' %}" class="filter-btn">✕ Clear</a>
+        {% endif %}
+    </form>
+
+    <!-- Grid -->
+    <div class="hist-grid">
+        {% for r in records %}
+        {% with pc=r.predicted_class %}
+        <div class="rec-card
+            {% if pc == 'COVID_19' %}cv
+            {% elif pc == 'Pneumonia_Bacterial' %}bact
+            {% elif pc == 'Pneumonia_Viral' %}vir
+            {% elif pc == 'normal' %}norm
+            {% elif pc == 'opacity' %}opac
+            {% endif %}"
+            style="animation-delay:{{ forloop.counter0 }}0ms;">
+
+            <!-- X-ray thumbnail -->
+            <div class="rec-img">
+                <div class="rec-img-scan"></div>
+                {% if r.image %}<img src="{{ r.image.url }}" alt="X-Ray" loading="lazy">{% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#2d4a62;"><i class="fas fa-image" style="font-size:2rem;"></i></div>{% endif %}
+                <div class="rec-img-overlay"></div>
+            </div>
+
+            <div class="rec-body">
+                <div class="rec-label
+                    {% if pc == 'COVID_19' %}lbl-cv
+                    {% elif pc == 'Pneumonia_Bacterial' %}lbl-bact
+                    {% elif pc == 'Pneumonia_Viral' %}lbl-vir
+                    {% elif pc == 'normal' %}lbl-norm
+                    {% elif pc == 'opacity' %}lbl-opac{% endif %}">
+                    <i class="fas fa-{% if pc == 'normal' %}circle-check{% elif pc == 'COVID_19' %}virus{% elif pc == 'opacity' %}eye{% else %}bacterium{% endif %}"></i>
+                    {{ r.predicted_label }}
+                </div>
+                <div class="rec-date"><i class="fas fa-calendar" style="margin-right:5px;"></i>{{ r.created_at|date:"F j, Y" }} &nbsp;·&nbsp; {{ r.created_at|time:"H:i" }}</div>
+
+                {% if is_doctor and r.patient_name %}
+                <div class="rec-patient">
+                    <div class="rec-patient-name"><i class="fas fa-user-injured" style="color:var(--sky);margin-right:6px;font-size:.8rem;"></i>{{ r.patient_name }}</div>
+                    <div class="rec-patient-meta">
+                        <span><i class="fas fa-id-card"></i> {{ r.patient_id|default:"—" }}</span>
+                        <span><i class="fas fa-cake-candles"></i> {{ r.patient_age|default:"—" }} yrs</span>
+                        <span><i class="fas fa-venus-mars"></i> {{ r.patient_gender|default:"—" }}</span>
+                        {% if r.xray_date %}<span><i class="fas fa-x-ray"></i> {{ r.xray_date|date:"d M Y" }}</span>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Confidence bar -->
+                <div class="rec-conf">
+                    <div class="rec-conf-track"><div class="rec-conf-fill" style="width:{{ r.confidence|floatformat:0 }}%;"></div></div>
+                    <div class="rec-conf-val">{{ r.confidence|floatformat:1 }}%</div>
+                </div>
+
+                <!-- Actions -->
+                <div class="rec-actions">
+                    <a href="{% url 'scan-detail' r.pk %}" class="rec-btn rec-btn-view"><i class="fas fa-eye"></i> View Report</a>
+                    <a href="{% url 'download-pdf' r.pk %}" class="rec-btn rec-btn-pdf"><i class="fas fa-file-pdf"></i> PDF</a>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-ico"><i class="fas fa-folder-open"></i></div>
+            <h3>No scans found</h3>
+            <p>{% if label_filter or date_from or date_to or search %}No records match your filters. Try adjusting them.{% else %}You haven't run any scans yet. Upload a chest X-ray to get started.{% endif %}</p>
+            <a href="{% url 'Deploy_8' %}" class="empty-cta"><i class="fas fa-microscope"></i> Start Scanning</a>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const rpts=document.getElementById('rpts');
+for(let i=0;i<14;i++){const d=document.createElement('div');d.className='rpt';const sz=Math.random()*5+2;d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;animation-duration:${Math.random()*20+12}s;animation-delay:-${Math.random()*20}s;background:rgba(14,165,233,${(Math.random()*.12+.03).toFixed(2)});`;rpts.appendChild(d);}
+</script>
+{% endblock %}

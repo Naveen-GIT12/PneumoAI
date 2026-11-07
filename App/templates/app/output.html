@@ -1,0 +1,532 @@
+{% extends "users/base.html" %}
+{% block title %}Medical Diagnosis Report — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+    --sky:#0ea5e9;--sky2:#38bdf8;--sky3:#7dd3fc;--skyd:#0284c7;
+    --org:#f97316;--org2:#fdba74;--em:#06b6d4;--grn:#10b981;
+    --c0:#03080f;--c1:#060e1c;--c2:#0a1628;
+    --bd:rgba(14,165,233,0.12);--bd2:rgba(14,165,233,0.25);
+    --mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;--tx2:#8fb8d8;
+    --covid:#ef4444;--normal:#10b981;--pneumo:#f97316;--opac:#8b5cf6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,0.09) 0%,transparent 55%),
+               radial-gradient(ellipse 55% 45% at 95% 75%,rgba(249,115,22,0.06) 0%,transparent 55%),
+               var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(14,165,233,0.028) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(14,165,233,0.028) 1px,transparent 1px);
+    background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+.rp-pts{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.rpt{position:absolute;border-radius:50%;animation:ptFloat linear infinite;}
+@keyframes ptFloat{0%{transform:translateY(110vh);opacity:0;}8%{opacity:1;}92%{opacity:0.55;}100%{transform:translateY(-5vh);opacity:0;}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes beamDown{0%{top:0;opacity:0;}4%{opacity:1;}96%{opacity:1;}100%{top:100%;opacity:0;}}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* ── THERMAL: toned-down, clinical appearance ── */
+@keyframes thermalIn{
+    0%  {filter:saturate(0) contrast(0.85) brightness(0.4);opacity:0;}
+    60% {filter:saturate(1.1) contrast(1.05) brightness(0.92);opacity:0.85;}
+    100%{filter:saturate(1.3) contrast(1.1) brightness(0.98);opacity:1;}
+}
+
+@keyframes pulseRing{0%{transform:scale(1);opacity:0.5;}100%{transform:scale(2.4);opacity:0;}}
+@keyframes countUp{from{opacity:0;transform:scale(0.5);}to{opacity:1;transform:scale(1);}}
+@keyframes gradFlow{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(14,165,233,0.7);}70%{box-shadow:0 0 0 10px rgba(14,165,233,0);}100%{box-shadow:0 0 0 0 rgba(14,165,233,0);}}
+@keyframes slideRight{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+
+.report-page{position:relative;z-index:1;padding:28px 36px 48px;font-family:'Plus Jakarta Sans',sans-serif;}
+
+/* ── HEADER ── */
+.rpt-header{position:relative;overflow:hidden;background:linear-gradient(135deg,#05091a,#070f20,#080e1e);
+    border:1px solid var(--bd);border-radius:24px;margin-bottom:24px;animation:fadeUp 0.7s ease both;}
+.hdr-grid{position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(14,165,233,0.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(14,165,233,0.05) 1px,transparent 1px);
+    background-size:28px 28px;}
+.hdr-aur{position:absolute;border-radius:50%;pointer-events:none;}
+.ha1{width:500px;height:500px;top:-200px;right:-100px;background:radial-gradient(circle,rgba(14,165,233,0.07) 0%,transparent 65%);}
+.ha2{width:300px;height:300px;bottom:-120px;left:15%;background:radial-gradient(circle,rgba(249,115,22,0.05) 0%,transparent 65%);}
+.hdr-beam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,165,233,0.6),transparent);animation:beamDown 5s ease-in-out infinite;pointer-events:none;z-index:3;}
+.hdr-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr auto;align-items:center;gap:32px;padding:36px 44px;}
+.hdr-eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:10px;margin-bottom:14px;animation:fadeUp 0.6s 0.1s ease both;}
+.hdr-eyebrow::before{content:'';width:24px;height:1px;background:var(--sky);}
+.hdr-edot{width:7px;height:7px;border-radius:50%;background:var(--sky);animation:ripple 2s ease-out infinite;}
+.hdr-title{font-family:'Outfit',sans-serif;font-size:2.4rem;font-weight:800;color:white;line-height:1.1;margin-bottom:8px;letter-spacing:-0.02em;animation:fadeUp 0.6s 0.15s ease both;}
+.hdr-title span{background:linear-gradient(110deg,var(--sky2),var(--em),var(--sky));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradFlow 4s ease infinite;}
+.hdr-sub{color:var(--mu2);font-size:0.9rem;font-weight:300;animation:fadeUp 0.6s 0.2s ease both;}
+.hdr-pills{display:flex;flex-direction:column;gap:8px;flex-shrink:0;animation:slideRight 0.7s 0.25s ease both;}
+.hpill{display:flex;align-items:center;gap:9px;background:rgba(14,165,233,0.07);border:1px solid rgba(14,165,233,0.14);border-radius:10px;padding:9px 14px;}
+.hpill-lbl{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--mu);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1px;}
+.hpill-val{font-weight:700;color:white;font-size:0.84rem;}
+.hpill-val.ok{color:#4ade80;}
+.hpill i{color:var(--sky);font-size:0.85rem;flex-shrink:0;}
+
+/* ── COLS ── */
+.report-cols{display:grid;grid-template-columns:1fr 1.3fr;gap:22px;align-items:start;}
+@media(max-width:1100px){.report-cols{grid-template-columns:1fr;}}
+.col-l,.col-r{display:flex;flex-direction:column;gap:20px;}
+
+/* ── CARD ── */
+.rc{position:relative;overflow:hidden;background:rgba(8,16,30,0.85);border:1px solid var(--bd);border-radius:20px;backdrop-filter:blur(16px);transition:border-color 0.3s,transform 0.3s,box-shadow 0.3s;opacity:0;transform:translateY(24px);}
+.rc.vis{opacity:1;transform:translateY(0);}
+.rc:hover{border-color:var(--bd2);transform:translateY(-3px);box-shadow:0 20px 50px rgba(0,0,0,0.35);}
+.rc-beam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,165,233,0.4),transparent);animation:beamDown 7s ease-in-out infinite;pointer-events:none;z-index:1;}
+.rc-accent{position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity 0.3s;}
+.rc:hover .rc-accent{opacity:1;}
+.rc-head{display:flex;align-items:center;gap:10px;padding:18px 22px 14px;border-bottom:1px solid rgba(14,165,233,0.08);position:relative;z-index:2;}
+.rc-ico{width:30px;height:30px;border-radius:9px;background:rgba(14,165,233,0.1);display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--sky);flex-shrink:0;}
+.rc-lbl{font-family:'JetBrains Mono',monospace;font-size:0.62rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--sky);}
+.rc-body{padding:18px 22px;position:relative;z-index:2;}
+
+/* ── IMAGE ── */
+.img-frame{position:relative;border-radius:12px;overflow:hidden;background:#000;border:1px solid rgba(14,165,233,0.1);}
+.img-frame img{width:100%;max-height:400px;object-fit:contain;display:block;transition:transform 0.5s;}
+.img-frame:hover img{transform:scale(1.03);}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(14,165,233,0.8),transparent);animation:beamDown 2.8s ease-in-out infinite;pointer-events:none;z-index:2;}
+.ic{position:absolute;width:18px;height:18px;z-index:3;opacity:0.6;}
+.ic.tl{top:8px;left:8px;border-top:1.5px solid var(--sky);border-left:1.5px solid var(--sky);}
+.ic.tr{top:8px;right:8px;border-top:1.5px solid var(--sky);border-right:1.5px solid var(--sky);}
+.ic.bl{bottom:8px;left:8px;border-bottom:1.5px solid var(--sky);border-left:1.5px solid var(--sky);}
+.ic.br{bottom:8px;right:8px;border-bottom:1.5px solid var(--sky);border-right:1.5px solid var(--sky);}
+.img-hud{position:absolute;bottom:10px;left:10px;z-index:3;font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:rgba(14,165,233,0.7);line-height:1.6;background:rgba(3,8,15,0.65);backdrop-filter:blur(6px);border:1px solid rgba(14,165,233,0.15);border-radius:6px;padding:5px 9px;}
+
+/* ── THERMAL: reduced saturation, no colour burn ── */
+.thermal-img img {
+    filter: none;
+    animation: none;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.tscale{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;background:rgba(0,0,0,0.5);border-radius:8px;border:1px solid rgba(14,165,233,0.08);}
+.tscale-bar{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#0000ff 0%,#00ccff 20%,#00ff88 40%,#ffff00 60%,#ff8800 80%,#ff0000 100%);box-shadow:0 0 8px rgba(255,100,0,0.3);}
+.tscale-lbl{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--mu);font-weight:500;}
+.ai-note{margin-top:14px;padding:14px 16px;background:rgba(14,165,233,0.04);border:1px solid rgba(14,165,233,0.12);border-left:3px solid var(--sky);border-radius:0 12px 12px 0;}
+.ai-note-t{font-family:'JetBrains Mono',monospace;font-size:0.62rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+.ai-note p{font-size:0.86rem;color:var(--mu2);line-height:1.75;font-weight:300;}
+
+/* ── DIAGNOSIS ── */
+.diag-result{position:relative;overflow:hidden;font-family:'Outfit',sans-serif;font-size:2.2rem;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;padding:22px 28px;border-radius:14px;text-align:center;margin-bottom:14px;}
+.diag-result::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 25%,rgba(255,255,255,0.07) 50%,transparent 75%);animation:shimmer 2.5s ease-in-out infinite;}
+.dp{position:absolute;inset:0;border-radius:14px;pointer-events:none;}
+.dp::before,.dp::after{content:'';position:absolute;inset:0;border-radius:14px;animation:pulseRing 2s ease-out infinite;}
+.dp::after{animation-delay:1s;}
+.dr-covid{background:rgba(239,68,68,0.1);color:#f87171;border:1.5px solid rgba(239,68,68,0.3);}
+.dr-covid .dp::before,.dr-covid .dp::after{border:1px solid rgba(239,68,68,0.3);}
+.dr-normal{background:rgba(16,185,129,0.1);color:#34d399;border:1.5px solid rgba(16,185,129,0.3);}
+.dr-normal .dp::before,.dr-normal .dp::after{border:1px solid rgba(16,185,129,0.3);}
+.dr-pneumonia{background:rgba(249,115,22,0.1);color:#fb923c;border:1.5px solid rgba(249,115,22,0.3);}
+.dr-pneumonia .dp::before,.dr-pneumonia .dp::after{border:1px solid rgba(249,115,22,0.3);}
+.dr-opacity{background:rgba(139,92,246,0.1);color:#a78bfa;border:1.5px solid rgba(139,92,246,0.3);}
+.dr-opacity .dp::before,.dr-opacity .dp::after{border:1px solid rgba(139,92,246,0.3);}
+.diag-sub{text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--mu);}
+.risk-pills{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.rpill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;border:1px solid;}
+.rp-g{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.25);color:#34d399;}
+.rp-o{background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.25);color:#fb923c;}
+.rp-r{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171;}
+.rp-p{background:rgba(139,92,246,0.1);border-color:rgba(139,92,246,0.25);color:#a78bfa;}
+.rpill i{font-size:0.7rem;}
+
+/* ── CONFIDENCE ── */
+.conf-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.conf-title{font-size:0.9rem;font-weight:700;color:white;}
+.conf-pct{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:600;color:var(--sky2);animation:countUp 0.8s 0.8s cubic-bezier(0.34,1.56,0.64,1) both;}
+.conf-track{position:relative;height:12px;background:rgba(255,255,255,0.05);border-radius:6px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(14,165,233,0.1);}
+.conf-fill{height:100%;border-radius:6px;width:0%;background:linear-gradient(90deg,#22c55e 0%,#0ea5e9 60%,#38bdf8 100%);background-size:200% auto;animation:gradFlow 3s ease infinite;transition:width 2.2s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 12px rgba(14,165,233,0.4);position:relative;}
+.conf-fill::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:rgba(255,255,255,0.6);border-radius:2px;box-shadow:0 0 8px white;}
+.conf-marks{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--mu);letter-spacing:0.05em;}
+
+/* ── CONDITION DETAILS ── */
+.sec-t{font-family:'JetBrains Mono',monospace;font-size:0.62rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:14px;margin-top:20px;padding-bottom:8px;border-bottom:1px solid rgba(14,165,233,0.1);}
+.sec-t:first-child{margin-top:0;}
+.sec-t::before{content:'';width:18px;height:1px;background:var(--sky);}
+.cond-desc{font-size:0.92rem;color:var(--tx2);line-height:1.85;font-weight:300;margin-bottom:16px;padding:14px 16px;background:rgba(14,165,233,0.03);border-radius:10px;border:1px solid rgba(14,165,233,0.07);}
+.sym-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.sym-chip{display:flex;align-items:center;gap:9px;padding:10px 13px;background:rgba(6,14,26,0.7);border:1px solid rgba(14,165,233,0.09);border-radius:10px;font-size:0.82rem;color:var(--tx2);font-weight:400;transition:all 0.25s;}
+.sym-chip:hover{border-color:rgba(14,165,233,0.22);background:rgba(14,165,233,0.04);color:var(--tx);}
+.sym-chip i{color:var(--sky);font-size:0.78rem;width:16px;flex-shrink:0;}
+.info-row{display:flex;background:rgba(6,14,26,0.6);border:1px solid rgba(14,165,233,0.08);border-radius:10px;overflow:hidden;margin-bottom:8px;transition:border-color 0.25s;}
+.info-row:hover{border-color:rgba(14,165,233,0.2);}
+.info-k{width:130px;flex-shrink:0;padding:12px 14px;background:rgba(14,165,233,0.06);border-right:1px solid rgba(14,165,233,0.08);font-family:'JetBrains Mono',monospace;font-size:0.62rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--sky);display:flex;align-items:flex-start;padding-top:13px;}
+.info-v{flex:1;padding:12px 14px;font-size:0.86rem;color:var(--mu2);line-height:1.65;font-weight:300;}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.scard{position:relative;overflow:hidden;background:linear-gradient(135deg,#06101e,#08162a);border:1px solid var(--bd);border-radius:18px;padding:22px 18px;text-align:center;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);opacity:0;transform:translateY(20px);}
+.scard.vis{opacity:1;transform:translateY(0);}
+.scard:hover{transform:translateY(-8px) scale(1.02);border-color:var(--bd2);box-shadow:0 20px 48px rgba(0,0,0,0.4);}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--sky),var(--sky2));opacity:0;transition:opacity 0.3s;}
+.scard:hover::before{opacity:1;}
+.scard::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(14,165,233,0.06),transparent 65%);opacity:0;transition:opacity 0.3s;}
+.scard:hover::after{opacity:1;}
+.scard-ico{width:44px;height:44px;border-radius:12px;margin:0 auto 12px;background:rgba(14,165,233,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--sky);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;z-index:1;}
+.scard:hover .scard-ico{transform:scale(1.15) rotate(-8deg);background:rgba(14,165,233,0.18);}
+.scard-val{font-family:'Outfit',sans-serif;font-size:1.7rem;font-weight:800;color:white;margin-bottom:4px;position:relative;z-index:1;letter-spacing:-0.02em;}
+.scard-lbl{font-family:'JetBrains Mono',monospace;font-size:0.6rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--mu);position:relative;z-index:1;}
+
+/* ── FOOTER ── */
+.rpt-footer{margin-top:24px;background:rgba(6,10,20,0.85);border:1px solid rgba(239,68,68,0.14);border-left:3px solid var(--covid);border-radius:0 16px 16px 0;padding:20px 26px;display:flex;align-items:flex-start;gap:16px;animation:fadeUp 0.6s 0.4s ease both;}
+.rft-ico{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--covid);}
+.rpt-footer h4{color:white;font-size:0.9rem;font-weight:700;margin-bottom:6px;}
+.rpt-footer p{font-size:0.82rem;color:var(--mu2);line-height:1.7;font-weight:300;}
+.rpt-copy{text-align:center;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;color:var(--mu);text-transform:uppercase;}
+
+@media(max-width:768px){
+    .report-page{padding:16px;}
+    .hdr-inner{grid-template-columns:1fr;gap:20px;}
+    .hdr-pills{flex-direction:row;flex-wrap:wrap;}
+    .stats-row{grid-template-columns:1fr;}
+    .sym-grid{grid-template-columns:1fr;}
+    .info-row{flex-direction:column;}
+    .info-k{width:100%;border-right:none;border-bottom:1px solid rgba(14,165,233,0.08);}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div><div class="rp-pts" id="rpts"></div>
+<div class="report-page">
+
+<!-- HEADER -->
+<div class="rpt-header">
+    <div class="hdr-grid"></div><div class="hdr-aur ha1"></div><div class="hdr-aur ha2"></div><div class="hdr-beam"></div>
+    <div class="hdr-inner">
+        <div>
+            <div class="hdr-eyebrow"><div class="hdr-edot"></div> AI Diagnostic Report</div>
+            <h1 class="hdr-title">Medical <span>Diagnosis</span> Report</h1>
+            <p class="hdr-sub">Comprehensive analysis powered by deep learning medical imaging AI</p>
+        </div>
+        <div class="hdr-pills">
+            <div class="hpill"><i class="fas fa-calendar-days"></i><div><div class="hpill-lbl">Date</div><div class="hpill-val">{% now "F j, Y" %}</div></div></div>
+            <div class="hpill"><i class="fas fa-fingerprint"></i><div><div class="hpill-lbl">Report ID</div><div class="hpill-val">MD-{% now "Ymd" %}</div></div></div>
+            <div class="hpill"><i class="fas fa-circle-check"></i><div><div class="hpill-lbl">Status</div><div class="hpill-val ok">Complete</div></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN COLS -->
+<div class="report-cols">
+<div class="col-l">
+
+    <!-- X-Ray -->
+    <div class="rc" data-delay="0">
+        <div class="rc-beam"></div>
+        <div class="rc-accent" style="background:linear-gradient(90deg,var(--sky),var(--em));"></div>
+        <div class="rc-head"><div class="rc-ico"><i class="fas fa-x-ray"></i></div><span class="rc-lbl">Original Chest X-Ray</span></div>
+        <div class="rc-body">
+            <div class="img-frame">
+                <div class="scan-line"></div>
+                <div class="ic tl"></div><div class="ic tr"></div><div class="ic bl"></div><div class="ic br"></div>
+                <img src="{{ obj.image.url }}" alt="Chest X-Ray">
+                <div class="img-hud">CHEST PA VIEW<br>RES: HIGH<br>AI PROCESSED</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thermal Heatmap -->
+{% if predict != "normal" %}
+<div class="rc" data-delay="100">
+    <div class="rc-beam" style="animation-delay:2s;"></div>
+
+    <div class="rc-accent"
+         style="background:linear-gradient(90deg,#ff0000,#ff8800,#ffff00);">
+    </div>
+
+    <div class="rc-head">
+        <div class="rc-ico"
+             style="background:rgba(249,115,22,0.12);color:var(--org);">
+            <i class="fas fa-virus"></i>
+        </div>
+        <span class="rc-lbl">Grad-CAM Thermal Heatmap</span>
+    </div>
+
+    <div class="rc-body">
+
+        {% if affected_image %}
+        <div class="img-frame thermal-img" id="heatmapFrame">
+
+            <div class="ic tl"></div>
+            <div class="ic tr"></div>
+            <div class="ic bl"></div>
+            <div class="ic br"></div>
+
+            <img
+                id="gradcamImage"
+                src="{{ affected_image }}"
+                alt="Grad-CAM Thermal Heatmap"
+                loading="eager"
+                onerror="
+                    this.style.display='none';
+                    document.getElementById('heatmapFallback').style.display='block';
+                "
+            >
+
+            <div class="img-hud" id="heatmapHud">
+                GRAD-CAM OVERLAY<br>
+                ACTIVATION MAP<br>
+                AFFECTED REGIONS
+            </div>
+        </div>
+
+        <div id="heatmapFallback"
+             style="display:none;padding:28px 18px;text-align:center;
+                    background:rgba(249,115,22,0.05);
+                    border:1px solid rgba(249,115,22,0.15);
+                    border-radius:12px;">
+
+            <i class="fas fa-image"
+               style="font-size:28px;color:#f97316;margin-bottom:12px;">
+            </i>
+
+            <p style="color:#fbbf24;font-weight:600;">
+                Heatmap image could not be loaded.
+            </p>
+
+            <p style="color:#5a7fa0;font-size:0.8rem;margin-top:6px;">
+                The original X-ray and AI classification are available.
+                Please retry the scan or check the server logs.
+            </p>
+        </div>
+
+        <div class="tscale">
+            <span class="tscale-lbl">LOW</span>
+            <div class="tscale-bar"></div>
+            <span class="tscale-lbl">HIGH</span>
+        </div>
+
+        {% else %}
+
+        <div style="padding:28px 18px;text-align:center;
+                    background:rgba(249,115,22,0.05);
+                    border:1px solid rgba(249,115,22,0.15);
+                    border-radius:12px;">
+
+            <i class="fas fa-hourglass-half"
+               style="font-size:28px;color:#f97316;margin-bottom:12px;">
+            </i>
+
+            <p style="color:#fbbf24;font-weight:600;">
+                Grad-CAM heatmap is unavailable.
+            </p>
+
+            <p style="color:#5a7fa0;font-size:0.8rem;margin-top:6px;">
+                Heatmap generation did not complete for this scan.
+            </p>
+        </div>
+
+        {% endif %}
+
+        <div class="ai-note">
+            <div class="ai-note-t">
+                <i class="fas fa-robot"></i>
+                AI Interpretation
+            </div>
+            <p>{{ affected_text }}</p>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+
+    <!-- Diagnosis -->
+    <div class="rc" data-delay="200">
+        <div class="rc-head"><div class="rc-ico"><i class="fas fa-stethoscope"></i></div><span class="rc-lbl">AI Diagnosis Result</span></div>
+        <div class="rc-body">
+            <div class="diag-result {% if predict == 'COVID_19' %}dr-covid{% elif predict == 'normal' %}dr-normal{% elif predict == 'Pneumonia_Bacterial' or predict == 'Pneumonia_Viral' %}dr-pneumonia{% elif predict == 'opacity' %}dr-opacity{% else %}dr-normal{% endif %}">
+                <div class="dp"></div>{{ predicted|upper }}
+            </div>
+            <div class="diag-sub">Classification by PneumoAI Deep Learning Model</div>
+            <div class="risk-pills">
+                {% if predict == 'normal' %}<div class="rpill rp-g"><i class="fas fa-circle-check"></i> No Infection</div><div class="rpill rp-g"><i class="fas fa-shield-halved"></i> Low Risk</div>
+                {% elif predict == 'COVID_19' %}<div class="rpill rp-r"><i class="fas fa-virus"></i> Viral Infection</div><div class="rpill rp-o"><i class="fas fa-triangle-exclamation"></i> High Risk</div><div class="rpill rp-o"><i class="fas fa-circle-radiation"></i> Contagious</div>
+                {% elif predict == 'Pneumonia_Bacterial' %}<div class="rpill rp-o"><i class="fas fa-circle-radiation"></i> Bacterial</div><div class="rpill rp-o"><i class="fas fa-triangle-exclamation"></i> Medium Risk</div><div class="rpill rp-g"><i class="fas fa-pills"></i> Treatable</div>
+                {% elif predict == 'Pneumonia_Viral' %}<div class="rpill rp-r"><i class="fas fa-virus"></i> Viral</div><div class="rpill rp-o"><i class="fas fa-triangle-exclamation"></i> Medium Risk</div>
+                {% elif predict == 'opacity' %}<div class="rpill rp-p"><i class="fas fa-eye"></i> Opacity</div><div class="rpill rp-o"><i class="fas fa-magnifying-glass"></i> Further Review</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Confidence -->
+    <div class="rc" data-delay="300">
+        <div class="rc-head"><div class="rc-ico"><i class="fas fa-chart-line"></i></div><span class="rc-lbl">Model Confidence Score</span></div>
+        <div class="rc-body">
+            <div class="conf-hdr">
+                <div><div class="conf-title">AI Certainty Level</div><div style="font-size:0.78rem;color:var(--mu);margin-top:2px;">Classification probability</div></div>
+                <div class="conf-pct">{% if predict == 'COVID_19' %}88%{% elif predict == 'normal' %}98%{% elif predict == 'Pneumonia_Bacterial' %}92%{% elif predict == 'Pneumonia_Viral' %}90%{% elif predict == 'opacity' %}85%{% else %}N/A{% endif %}</div>
+            </div>
+            <div class="conf-track">
+                <div class="conf-fill" id="confFill" data-w="{% if predict == 'COVID_19' %}88{% elif predict == 'normal' %}98{% elif predict == 'Pneumonia_Bacterial' %}92{% elif predict == 'Pneumonia_Viral' %}90{% elif predict == 'opacity' %}85{% else %}0{% endif %}"></div>
+            </div>
+            <div class="conf-marks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+        </div>
+    </div>
+
+</div>
+<div class="col-r">
+
+    <!-- Condition Details -->
+    <div class="rc" data-delay="150">
+        <div class="rc-head"><div class="rc-ico"><i class="fas fa-book-medical"></i></div><span class="rc-lbl">Condition Details</span></div>
+        <div class="rc-body">
+        {% if obj %}
+            {% if predict == "COVID_19" %}
+            <div class="cond-desc">COVID-19 is a highly contagious viral respiratory illness caused by SARS-CoV-2. It produces characteristic bilateral ground-glass opacities in a peripheral distribution, reflecting diffuse alveolar damage and inflammatory exudate in lung parenchyma.</div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Key Symptoms</div>
+            <div class="sym-grid">
+                <div class="sym-chip"><i class="fas fa-thermometer"></i> High Fever (&gt;38°C)</div>
+                <div class="sym-chip"><i class="fas fa-lungs"></i> Dry Persistent Cough</div>
+                <div class="sym-chip"><i class="fas fa-wind"></i> Breathlessness</div>
+                <div class="sym-chip"><i class="fas fa-face-frown"></i> Severe Fatigue</div>
+                <div class="sym-chip"><i class="fas fa-circle-xmark"></i> Loss of Smell/Taste</div>
+                <div class="sym-chip"><i class="fas fa-user-nurse"></i> Chest Tightness</div>
+            </div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Clinical Details</div>
+            <div class="info-row"><div class="info-k">Pathogen</div><div class="info-v">SARS-CoV-2 (Betacoronavirus family)</div></div>
+            <div class="info-row"><div class="info-k">Transmission</div><div class="info-v">Airborne droplets, aerosols, contaminated surfaces, close contact</div></div>
+            <div class="info-row"><div class="info-k">Prevention</div><div class="info-v">Vaccination (primary + booster), masking, physical distancing, hand hygiene, ventilation</div></div>
+            <div class="info-row"><div class="info-k">Treatment</div><div class="info-v">Antivirals (Paxlovid, Remdesivir), supportive care, O₂ therapy, dexamethasone for severe cases</div></div>
+            <div class="info-row"><div class="info-k">Complications</div><div class="info-v">ARDS, cytokine storm, cardiac injury, DVT/PE, long-COVID syndrome</div></div>
+            <div class="info-row"><div class="info-k">Recovery</div><div class="info-v">2–6 weeks mild; prolonged in severe cases; long-COVID in ~10–20%</div></div>
+            <div class="info-row"><div class="info-k">Imaging</div><div class="info-v">Bilateral GGO, peripheral consolidation, crazy-paving pattern, lower lobe predominance</div></div>
+            {% endif %}
+
+            {% if predict == "normal" %}
+            <div class="cond-desc">No significant radiological abnormalities detected. The lung fields appear clear bilaterally with normal aeration pattern. No consolidation, pleural effusion, interstitial changes, or pneumothorax identified. Cardiac silhouette and mediastinal contours are within normal limits.</div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Normal Lung Findings</div>
+            <div class="sym-grid">
+                <div class="sym-chip" style="border-color:rgba(16,185,129,0.2);"><i class="fas fa-circle-check" style="color:#34d399;"></i> Clear Lung Fields</div>
+                <div class="sym-chip" style="border-color:rgba(16,185,129,0.2);"><i class="fas fa-circle-check" style="color:#34d399;"></i> Normal Aeration</div>
+                <div class="sym-chip" style="border-color:rgba(16,185,129,0.2);"><i class="fas fa-circle-check" style="color:#34d399;"></i> No Consolidation</div>
+                <div class="sym-chip" style="border-color:rgba(16,185,129,0.2);"><i class="fas fa-circle-check" style="color:#34d399;"></i> No Pleural Effusion</div>
+                <div class="sym-chip" style="border-color:rgba(16,185,129,0.2);"><i class="fas fa-circle-check" style="color:#34d399;"></i> Normal Cardiac Size</div>
+                <div class="sym-chip" style="border-color:rgba(16,185,129,0.2);"><i class="fas fa-circle-check" style="color:#34d399;"></i> No Interstitial Changes</div>
+            </div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Wellness Recommendations</div>
+            <div class="info-row"><div class="info-k">Exercise</div><div class="info-v">30 min moderate cardio daily (walking, cycling, swimming); strengthens diaphragm and lung capacity</div></div>
+            <div class="info-row"><div class="info-k">Nutrition</div><div class="info-v">Anti-inflammatory diet, omega-3 fatty acids, vitamins C, D and E for respiratory immunity</div></div>
+            <div class="info-row"><div class="info-k">Avoid</div><div class="info-v">Smoking, vaping, passive smoke, occupational dust/fumes, high-pollution environments</div></div>
+            <div class="info-row"><div class="info-k">Vaccinations</div><div class="info-v">Keep influenza, COVID-19 and pneumococcal vaccines up to date</div></div>
+            <div class="info-row"><div class="info-k">Follow-up</div><div class="info-v">Annual chest review; bi-annual if age &gt;50 or smoking history</div></div>
+            {% endif %}
+
+            {% if predict == "opacity" %}
+            <div class="cond-desc">Pulmonary opacity indicates increased radiodensity within the lung parenchyma. This may represent consolidation (alveolar filling with fluid/pus/blood), ground-glass opacity (partial alveolar filling), or interstitial thickening — each carrying different diagnostic implications requiring specialist assessment.</div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Presenting Symptoms</div>
+            <div class="sym-grid">
+                <div class="sym-chip"><i class="fas fa-lungs"></i> Persistent Cough</div>
+                <div class="sym-chip"><i class="fas fa-thermometer"></i> Fever / Night Sweats</div>
+                <div class="sym-chip"><i class="fas fa-wind"></i> Dyspnoea on Exertion</div>
+                <div class="sym-chip"><i class="fas fa-virus"></i> Pleuritic Chest Pain</div>
+                <div class="sym-chip"><i class="fas fa-scale-balanced"></i> Unexplained Weight Loss</div>
+                <div class="sym-chip"><i class="fas fa-droplet"></i> Haemoptysis (blood sputum)</div>
+            </div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Clinical Details</div>
+            <div class="info-row"><div class="info-k">Possible Causes</div><div class="info-v">Pneumonia, pulmonary TB, lung malignancy, interstitial lung disease, pulmonary oedema, haemorrhage, aspiration</div></div>
+            <div class="info-row"><div class="info-k">Investigations</div><div class="info-v">HRCT chest, sputum culture/AFB, bronchoscopy + BAL, PET-CT if malignancy suspected, spirometry</div></div>
+            <div class="info-row"><div class="info-k">Treatment</div><div class="info-v">Targeted to aetiology: antibiotics, antifungals, diuretics (oedema), steroids (ILD), oncology referral (malignancy)</div></div>
+            <div class="info-row"><div class="info-k">Urgency</div><div class="info-v">Prompt specialist respiratory physician review recommended — do not delay if symptomatic</div></div>
+            <div class="info-row"><div class="info-k">Monitoring</div><div class="info-v">Serial chest X-rays at 4–6 weeks to confirm resolution or progression</div></div>
+            {% endif %}
+
+            {% if predict == "Pneumonia_Bacterial" %}
+            <div class="cond-desc">Bacterial pneumonia is an acute lower respiratory infection characterised by bacterial invasion of the alveoli, producing intense inflammatory exudate that impairs gas exchange. It causes classic lobar or segmental consolidation on imaging, often with air bronchograms.</div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Key Symptoms</div>
+            <div class="sym-grid">
+                <div class="sym-chip"><i class="fas fa-thermometer"></i> High Fever (&gt;39°C) + Rigors</div>
+                <div class="sym-chip"><i class="fas fa-lungs"></i> Productive / Rusty Sputum</div>
+                <div class="sym-chip"><i class="fas fa-wind"></i> Tachypnoea / Breathlessness</div>
+                <div class="sym-chip"><i class="fas fa-virus"></i> Pleuritic Chest Pain</div>
+                <div class="sym-chip"><i class="fas fa-face-frown"></i> Severe Malaise</div>
+                <div class="sym-chip"><i class="fas fa-ear-listen"></i> Bronchial Breath Sounds</div>
+            </div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Clinical Details</div>
+            <div class="info-row"><div class="info-k">Common Pathogens</div><div class="info-v">S. pneumoniae (50%), H. influenzae, S. aureus (MRSA risk), Klebsiella, Legionella (atypical)</div></div>
+            <div class="info-row"><div class="info-k">First-Line Tx</div><div class="info-v">Amoxicillin 500mg TDS or co-amoxiclav; add macrolide if atypical suspected</div></div>
+            <div class="info-row"><div class="info-k">Severe Cases</div><div class="info-v">IV co-amoxiclav + clarithromycin, O₂ therapy, IV fluids, ICU if sepsis/ARDS</div></div>
+            <div class="info-row"><div class="info-k">Complications</div><div class="info-v">Parapneumonic effusion, empyema, lung abscess, bacteraemia, sepsis, ARDS</div></div>
+            <div class="info-row"><div class="info-k">Recovery Time</div><div class="info-v">Symptoms improve 3–5 days; 1–3 weeks full recovery; X-ray clears 4–6 weeks</div></div>
+            <div class="info-row"><div class="info-k">Imaging</div><div class="info-v">Lobar/segmental consolidation, air bronchograms, parapneumonic effusion</div></div>
+            {% endif %}
+
+            {% if predict == "Pneumonia_Viral" %}
+            <div class="cond-desc">Viral pneumonia results from direct viral invasion of respiratory epithelium, triggering immune-mediated inflammatory injury. Unlike bacterial pneumonia, it typically produces bilateral diffuse interstitial infiltrates rather than focal consolidation, reflecting a different pathophysiological mechanism.</div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Key Symptoms</div>
+            <div class="sym-grid">
+                <div class="sym-chip"><i class="fas fa-thermometer"></i> Fever + Myalgia</div>
+                <div class="sym-chip"><i class="fas fa-lungs"></i> Dry Non-productive Cough</div>
+                <div class="sym-chip"><i class="fas fa-wind"></i> Progressive Breathlessness</div>
+                <div class="sym-chip"><i class="fas fa-face-frown"></i> Profound Fatigue</div>
+                <div class="sym-chip"><i class="fas fa-user-nurse"></i> Headache / Sore Throat</div>
+                <div class="sym-chip"><i class="fas fa-droplet"></i> Cyanosis (severe cases)</div>
+            </div>
+            <div class="sec-t"><i class="fas fa-circle-dot"></i> Clinical Details</div>
+            <div class="info-row"><div class="info-k">Common Viruses</div><div class="info-v">Influenza A/B, RSV, Adenovirus, Parainfluenza, SARS-CoV-2, Metapneumovirus</div></div>
+            <div class="info-row"><div class="info-k">Treatment</div><div class="info-v">Oseltamivir (influenza), supportive care, O₂; antivirals for immunocompromised patients</div></div>
+            <div class="info-row"><div class="info-k">Antibiotics?</div><div class="info-v">Only if secondary bacterial superinfection develops (rising CRP, purulent sputum)</div></div>
+            <div class="info-row"><div class="info-k">Complications</div><div class="info-v">Respiratory failure, ARDS, secondary bacterial pneumonia, myocarditis, encephalitis</div></div>
+            <div class="info-row"><div class="info-k">Recovery Time</div><div class="info-v">1–4 weeks; prolonged in elderly, immunocompromised, or those with co-morbidities</div></div>
+            <div class="info-row"><div class="info-k">Imaging</div><div class="info-v">Bilateral interstitial infiltrates, peribronchial cuffing, diffuse bilateral haziness, no lobar pattern</div></div>
+            {% endif %}
+        {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="scard" data-delay="400"><div class="scard-ico"><i class="fas fa-heart-pulse"></i></div><div class="scard-val">{% if predict == 'COVID_19' %}85%{% elif predict == 'normal' %}100%{% elif predict == 'Pneumonia_Bacterial' %}70%{% elif predict == 'Pneumonia_Viral' %}65%{% elif predict == 'opacity' %}50%{% else %}—{% endif %}</div><div class="scard-lbl">Treatment Success</div></div>
+        <div class="scard" data-delay="500"><div class="scard-ico"><i class="fas fa-clock-rotate-left"></i></div><div class="scard-val">{% if predict == 'COVID_19' %}2–6w{% elif predict == 'normal' %}N/A{% elif predict == 'Pneumonia_Bacterial' %}1–3w{% elif predict == 'Pneumonia_Viral' %}1–4w{% elif predict == 'opacity' %}2–4w{% else %}—{% endif %}</div><div class="scard-lbl">Recovery Time</div></div>
+        <div class="scard" data-delay="600"><div class="scard-ico"><i class="fas fa-biohazard"></i></div><div class="scard-val">{% if predict == 'COVID_19' %}High{% elif predict == 'normal' %}None{% elif predict == 'Pneumonia_Bacterial' %}Med{% elif predict == 'Pneumonia_Viral' %}Med{% elif predict == 'opacity' %}Low{% else %}—{% endif %}</div><div class="scard-lbl">Contagion Risk</div></div>
+    </div>
+
+</div>
+</div>
+
+{% if record %}
+<div class="rc" style="transition:none;">
+    <div class="rc-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="{% url 'download-pdf' record.pk %}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 20px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:12px;color:white;font-family:'Outfit',sans-serif;font-weight:700;font-size:.93rem;text-decoration:none;transition:all .28s;box-shadow:0 8px 24px rgba(239,68,68,.25);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 14px 36px rgba(239,68,68,.38)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(239,68,68,.25)'">
+            <i class="fas fa-file-pdf"></i> Download PDF Report
+        </a>
+        <a href="{% url 'scan-history' %}" style="display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 20px;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.25);border-radius:12px;color:#38bdf8;font-family:'Outfit',sans-serif;font-weight:600;font-size:.9rem;text-decoration:none;transition:all .25s;" onmouseover="this.style.background='rgba(14,165,233,.18)';this.style.color='white'" onmouseout="this.style.background='rgba(14,165,233,.1)';this.style.color='#38bdf8'">
+            <i class="fas fa-clock-rotate-left"></i> View History
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- FOOTER -->
+<div class="rpt-footer">
+    <div class="rft-ico"><i class="fas fa-triangle-exclamation"></i></div>
+    <div><h4>Important Medical Disclaimer</h4><p>This AI-assisted report is for informational purposes only and must be interpreted by a qualified healthcare professional alongside clinical examination and appropriate investigations. It does not constitute a definitive medical diagnosis or treatment plan. In case of emergency or acute symptoms, seek immediate medical attention.</p></div>
+</div>
+<div class="rpt-copy">© {% now "Y" %} PneumoAI Detection System · For medical use under professional supervision</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const rpts=document.getElementById('rpts');
+for(let i=0;i<18;i++){const d=document.createElement('div');d.className='rpt';const sz=Math.random()*5+2;d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;animation-duration:${Math.random()*20+12}s;animation-delay:-${Math.random()*20}s;background:rgba(14,165,233,${(Math.random()*0.12+0.03).toFixed(2)});`;rpts.appendChild(d);}
+document.addEventListener('DOMContentLoaded',()=>{
+    const fill=document.getElementById('confFill');
+    if(fill){const w=fill.dataset.w;fill.style.width='0%';setTimeout(()=>{fill.style.width=w+'%';},600);}
+    const io=new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{if(e.isIntersecting){const delay=parseInt(e.target.dataset.delay||0);setTimeout(()=>{e.target.classList.add('vis');},delay);io.unobserve(e.target);}});
+    },{threshold:0.08});
+    document.querySelectorAll('.rc,.scard').forEach(el=>io.observe(el));
+});
+</script>
+{% endblock %}

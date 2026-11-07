@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <title>Patient Sign Up — PneumoAI</title>
+  <style>
+    :root {
+      --org:    #f97316;
+      --org2:   #fb923c;
+      --orgd:   #ea580c;
+      --sky:    #0ea5e9;
+      --dark:   #060d1a;
+      --panel:  #0c1422;
+      --card:   #101d30;
+      --border: rgba(249,115,22,0.13);
+      --borderg: rgba(249,115,22,0.22);
+      --muted:  #4a637d;
+      --text:   #cfe4f5;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { height: 100%; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ════════════ BACKGROUND ════════════ */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at -5% 50%, rgba(249,115,22,0.11) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 50% at 105% 20%, rgba(14,165,233,0.06) 0%, transparent 50%),
+        var(--dark);
+    }
+
+    .mesh {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(249,115,22,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,0.035) 1px, transparent 1px);
+      background-size: 55px 55px;
+      animation: meshDrift 35s linear infinite;
+    }
+    @keyframes meshDrift {
+      0%   { background-position: 0 0; }
+      100% { background-position: 55px 55px; }
+    }
+
+    .aurora {
+      position: fixed; z-index: 0; border-radius: 50%; pointer-events: none;
+      animation: aurDrift 14s ease-in-out infinite alternate;
+    }
+    .aur1 { width:480px; height:480px; top:-120px; left:-80px; background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%); }
+    .aur2 { width:350px; height:350px; bottom:-80px; right:-60px; background: radial-gradient(circle, rgba(14,165,233,0.06) 0%, transparent 70%); animation-delay: -7s; }
+    @keyframes aurDrift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(50px, 30px) scale(1.15); }
+    }
+
+    .pts { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .pt {
+      position: absolute; border-radius: 50%;
+      animation: ptRise linear infinite;
+    }
+    @keyframes ptRise {
+      0%   { transform: translateY(110vh); opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 0.6; }
+      100% { transform: translateY(-10vh); opacity: 0; }
+    }
+
+    /* ════════════ LAYOUT ════════════ */
+    .page {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+    }
+
+    /* ════════════ LEFT SIDEBAR ════════════ */
+    .sidebar {
+      background: rgba(10,18,32,0.6);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(24px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 48px 32px;
+      position: relative; overflow: hidden;
+      animation: sideIn 0.85s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes sideIn {
+      from { opacity:0; transform: translateX(-60px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+
+    /* scan beam */
+    .beam {
+      position: absolute; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.8), transparent);
+      animation: beamDown 4.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes beamDown {
+      0%   { top:-2px; opacity:0; }
+      5%   { opacity:1; }
+      95%  { opacity:1; }
+      100% { top:100%; opacity:0; }
+    }
+
+    /* corner brackets */
+    .crn { position:absolute; width:32px; height:32px; opacity:0.45; }
+    .crn-tl { top:16px; left:16px; border-top:2px solid var(--org); border-left:2px solid var(--org); }
+    .crn-tr { top:16px; right:16px; border-top:2px solid var(--org); border-right:2px solid var(--org); }
+    .crn-bl { bottom:16px; left:16px; border-bottom:2px solid var(--org); border-left:2px solid var(--org); }
+    .crn-br { bottom:16px; right:16px; border-bottom:2px solid var(--org); border-right:2px solid var(--org); }
+
+    /* brand */
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 44px; text-decoration: none;
+    }
+    .brand-logo {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, var(--org), var(--orgd));
+      border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: white;
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.5), 0 6px 20px rgba(249,115,22,0.25); }
+      50%      { box-shadow: 0 0 0 10px rgba(249,115,22,0), 0 6px 28px rgba(249,115,22,0.5); }
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem; color: white;
+    }
+    .brand-name em { color: var(--org); font-style: normal; }
+
+    /* ── PATIENT HEARTBEAT VISUAL ── */
+    .pat-visual {
+      position: relative; width: 200px; height: 200px;
+      margin-bottom: 36px;
+    }
+
+    /* heartbeat ring */
+    .hb-ring {
+      position: absolute; border-radius: 50%;
+      border-style: solid; border-color: transparent;
+      animation: orbSpin linear infinite;
+    }
+    .hb-ring-1 {
+      inset: 0; border-width: 1px;
+      border-top-color: rgba(249,115,22,0.55);
+      border-right-color: rgba(249,115,22,0.2);
+      animation-duration: 9s;
+    }
+    .hb-ring-2 {
+      inset: 20px; border-width: 1px;
+      border-bottom-color: rgba(249,115,22,0.35);
+      border-left-color: rgba(249,115,22,0.12);
+      animation-duration: 14s; animation-direction: reverse;
+    }
+    .hb-ring-3 {
+      inset: 40px; border-width: 1px;
+      border-top-color: rgba(251,146,60,0.25);
+      animation-duration: 22s;
+    }
+    @keyframes orbSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    .hb-dot {
+      position: absolute; border-radius: 50%;
+      top: -4px; left: calc(50% - 4px);
+      width: 8px; height: 8px;
+      background: var(--org);
+      box-shadow: 0 0 12px rgba(249,115,22,1);
+    }
+    .hb-dot-sm {
+      width: 6px; height: 6px;
+      top: -3px; left: calc(50% - 3px);
+      background: var(--org2);
+      box-shadow: 0 0 8px rgba(251,146,60,0.9);
+    }
+
+    .hb-core {
+      position: absolute; inset: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 38%, rgba(249,115,22,0.22), rgba(249,115,22,0.04));
+      border: 1px solid rgba(249,115,22,0.32);
+      display: flex; align-items: center; justify-content: center;
+      animation: corePulse 2.4s ease-in-out infinite;
+    }
+    @keyframes corePulse {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249,115,22,0.3); }
+      50%      { transform: scale(1.09); box-shadow: 0 0 0 14px rgba(249,115,22,0); }
+    }
+    .hb-core i { font-size: 2.6rem; color: var(--org); }
+
+    /* ── FEATURE LIST ── */
+    .sid-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.25rem; color: var(--org);
+      text-align: center; margin-bottom: 8px;
+    }
+    .sid-sub {
+      font-size: 0.82rem; color: var(--muted);
+      text-align: center; line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .feat-list { list-style: none; width: 100%; }
+    .feat-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(249,115,22,0.07);
+      font-size: 0.82rem; color: var(--muted);
+      animation: featIn 0.5s ease both;
+    }
+    .feat-item:last-child { border-bottom: none; }
+    .feat-item:nth-child(1) { animation-delay: 0.3s; }
+    .feat-item:nth-child(2) { animation-delay: 0.45s; }
+    .feat-item:nth-child(3) { animation-delay: 0.6s; }
+    .feat-item:nth-child(4) { animation-delay: 0.75s; }
+    @keyframes featIn {
+      from { opacity:0; transform: translateX(-16px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+    .feat-icon {
+      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(249,115,22,0.1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--org); font-size: 0.8rem;
+      transition: transform 0.25s;
+    }
+    .feat-item:hover .feat-icon { transform: scale(1.15) rotate(-6deg); }
+    .feat-item:hover { color: var(--text); }
+
+    /* ════════════ RIGHT FORM AREA ════════════ */
+    .form-area {
+      padding: 44px 60px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; justify-content: center;
+      animation: formIn 0.85s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes formIn {
+      from { opacity:0; transform: translateX(60px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+
+    /* ── header ── */
+    .fh-eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--org);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .fh-eyebrow::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .fh-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem; color: white;
+      margin-bottom: 5px; line-height: 1.15;
+    }
+    .fh-sub { font-size: 0.86rem; color: var(--muted); margin-bottom: 28px; }
+
+    /* ── role badge ── */
+    .role-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(249,115,22,0.1);
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: 30px; padding: 6px 14px;
+      font-size: 0.78rem; font-weight: 700; color: var(--org2);
+      margin-bottom: 24px;
+    }
+    .role-badge i { font-size: 0.85rem; }
+    .role-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--org);
+      box-shadow: 0 0 6px rgba(249,115,22,0.8);
+      animation: dotBlink 1.8s ease-in-out infinite;
+    }
+    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── error ── */
+    .err-box {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px; padding: 11px 15px;
+      font-size: 0.81rem; color: #fca5a5;
+      margin-bottom: 18px;
+      display: flex; gap: 9px; align-items: flex-start;
+      animation: shake 0.35s ease;
+    }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+    .err-box ul { padding-left: 14px; }
+
+    /* ── grid rows ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── field ── */
+    .field {
+      margin-bottom: 14px;
+      animation: fieldIn 0.5s ease both;
+    }
+    .field:nth-child(1)  { animation-delay: 0.1s; }
+    .field:nth-child(2)  { animation-delay: 0.18s; }
+    .field:nth-child(3)  { animation-delay: 0.26s; }
+    .field:nth-child(4)  { animation-delay: 0.34s; }
+    .field:nth-child(5)  { animation-delay: 0.42s; }
+    @keyframes fieldIn {
+      from { opacity:0; transform: translateY(14px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    .flabel {
+      display: block; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .req { color: var(--org); }
+
+    /* ── input shell ── */
+    .ishell {
+      position: relative;
+      display: flex; align-items: center;
+      height: 48px;
+      background: rgba(10,18,32,0.85);
+      border: 1px solid rgba(249,115,22,0.12);
+      border-radius: 10px; overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+    .ishell::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--org), var(--org2));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .ishell:focus-within {
+      border-color: rgba(249,115,22,0.38);
+      background: rgba(249,115,22,0.035);
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.07), inset 0 0 20px rgba(249,115,22,0.02);
+    }
+    .ishell:focus-within::after { transform: scaleX(1); }
+
+    .iico {
+      width: 42px; display: flex; align-items: center; justify-content: center;
+      color: rgba(249,115,22,0.3); font-size: 0.85rem; flex-shrink: 0;
+      transition: color 0.25s;
+    }
+    .ishell:focus-within .iico { color: var(--org); }
+
+    .ishell input {
+      flex:1; background:none; border:none; outline:none;
+      color: var(--text); font-family:'Outfit', sans-serif;
+      font-size: 0.9rem; padding-right: 10px;
+    }
+    .ishell input::placeholder { color: #1b3047; }
+
+    .eye-btn {
+      width: 38px; background: none; border: none;
+      color: var(--muted); cursor: pointer; font-size: 0.8rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s; height: 100%;
+    }
+    .eye-btn:hover { color: var(--org); }
+
+    .ferr { font-size: 0.71rem; color: #f87171; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+
+    /* ── password strength ── */
+    .pw-strength { margin-top: 6px; }
+    .pw-bars { display: flex; gap: 4px; }
+    .pw-bar {
+      flex:1; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,0.08);
+      transition: background 0.3s;
+    }
+    .pw-label { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── submit ── */
+    .btn-submit {
+      width: 100%; height: 52px; margin-top: 8px;
+      background: linear-gradient(135deg, var(--org) 0%, var(--orgd) 100%);
+      border: none; border-radius: 10px;
+      color: white; font-family: 'Outfit', sans-serif;
+      font-size: 0.97rem; font-weight: 700;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      animation: fieldIn 0.5s 0.55s ease both;
+    }
+    .btn-submit .shimmer {
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+      transform: translateX(-100%); transition: transform 0.5s ease;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(249,115,22,0.38); }
+    .btn-submit:hover .shimmer { transform: translateX(100%); }
+    .btn-submit:active { transform: translateY(0); }
+
+    /* ── footer links ── */
+    .footer-links {
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      margin-top: 18px;
+      animation: fieldIn 0.5s 0.65s ease both;
+    }
+    .footer-links span { font-size: 0.81rem; color: var(--muted); }
+    .footer-links a {
+      color: var(--org); font-weight: 600; text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--org2); }
+
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .form-area { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="mesh"></div>
+<div class="aurora aur1"></div>
+<div class="aurora aur2"></div>
+<div class="pts" id="pts"></div>
+
+<div class="page">
+
+  <!-- ══════ SIDEBAR ══════ -->
+  <div class="sidebar">
+    <div class="beam"></div>
+    <div class="crn crn-tl"></div><div class="crn crn-tr"></div>
+    <div class="crn crn-bl"></div><div class="crn crn-br"></div>
+
+    <a href="{% url 'login' %}" class="brand">
+      <div class="brand-logo"><i class="fas fa-lungs"></i></div>
+      <span class="brand-name">Pneumo<em>AI</em></span>
+    </a>
+
+    <div class="pat-visual">
+      <div class="hb-ring hb-ring-1"><div class="hb-dot"></div></div>
+      <div class="hb-ring hb-ring-2"><div class="hb-dot hb-dot-sm"></div></div>
+      <div class="hb-ring hb-ring-3"></div>
+      <div class="hb-core"><i class="fas fa-user-injured"></i></div>
+    </div>
+
+    <p class="sid-title">Patient Registration</p>
+    <p class="sid-sub">Create your account to access AI‑assisted lung diagnostics and personal health reports.</p>
+
+    <ul class="feat-list">
+      <li class="feat-item">
+        <div class="feat-icon"><i class="fas fa-x-ray"></i></div>
+        Upload chest X-rays instantly
+      </li>
+      <li class="feat-item">
+        <div class="feat-icon"><i class="fas fa-brain"></i></div>
+        AI diagnosis in under 3 seconds
+      </li>
+      <li class="feat-item">
+        <div class="feat-icon"><i class="fas fa-file-medical"></i></div>
+        Download full diagnostic reports
+      </li>
+      <li class="feat-item">
+        <div class="feat-icon"><i class="fas fa-shield-halved"></i></div>
+        Secure &amp; private health data
+      </li>
+    </ul>
+  </div>
+
+  <!-- ══════ FORM ══════ -->
+  <div class="form-area">
+
+    <div class="fh-eyebrow"><i class="fas fa-user-injured"></i> Patient Portal</div>
+    <h1 class="fh-title">Create Your<br>Patient Account</h1>
+    <p class="fh-sub">Fill in your details to get started with PneumoAI</p>
+
+    <div class="role-badge">
+      <div class="dot"></div>
+      <i class="fas fa-user-injured"></i>
+      Patient Registration
+    </div>
+
+    {% if form.errors %}
+    <div class="err-box">
+      <i class="fas fa-circle-exclamation" style="margin-top:2px;flex-shrink:0;"></i>
+      <ul>
+        {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}
+        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'patient-register' %}">
+      {% csrf_token %}
+
+      <div class="row2">
+        <div class="field">
+          <label class="flabel">First Name <span class="req">*</span></label>
+          <div class="ishell">
+            <span class="iico"><i class="fas fa-user"></i></span>
+            <input type="text" name="first_name" placeholder="First name" value="{{ form.first_name.value|default:'' }}" required/>
+          </div>
+          {% if form.first_name.errors %}<div class="ferr"><i class="fas fa-circle-exclamation"></i>{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label class="flabel">Last Name <span class="req">*</span></label>
+          <div class="ishell">
+            <span class="iico"><i class="fas fa-user"></i></span>
+            <input type="text" name="last_name" placeholder="Last name" value="{{ form.last_name.value|default:'' }}" required/>
+          </div>
+          {% if form.last_name.errors %}<div class="ferr"><i class="fas fa-circle-exclamation"></i>{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="flabel">Username <span class="req">*</span></label>
+        <div class="ishell">
+          <span class="iico"><i class="fas fa-at"></i></span>
+          <input type="text" name="username" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" required autocomplete="username"/>
+        </div>
+        {% if form.username.errors %}<div class="ferr"><i class="fas fa-circle-exclamation"></i>{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="field">
+        <label class="flabel">Email Address <span class="req">*</span></label>
+        <div class="ishell">
+          <span class="iico"><i class="fas fa-envelope"></i></span>
+          <input type="email" name="email" placeholder="your@email.com" value="{{ form.email.value|default:'' }}" required autocomplete="email"/>
+        </div>
+        {% if form.email.errors %}<div class="ferr"><i class="fas fa-circle-exclamation"></i>{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label class="flabel">Password <span class="req">*</span></label>
+          <div class="ishell">
+            <span class="iico"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password1" placeholder="Create password" required autocomplete="new-password" id="p1" oninput="checkStrength(this.value)"/>
+            <button type="button" class="eye-btn" onclick="toggleEye('p1',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
+          </div>
+          {% if form.password1.errors %}<div class="ferr"><i class="fas fa-circle-exclamation"></i>{{ form.password1.errors.0 }}</div>{% endif %}
+          <div class="pw-strength">
+            <div class="pw-bars">
+              <div class="pw-bar" id="bar1"></div>
+              <div class="pw-bar" id="bar2"></div>
+              <div class="pw-bar" id="bar3"></div>
+              <div class="pw-bar" id="bar4"></div>
+            </div>
+            <div class="pw-label" id="pwLabel"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="flabel">Confirm Password <span class="req">*</span></label>
+          <div class="ishell" id="p2shell">
+            <span class="iico"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password2" placeholder="Repeat password" required autocomplete="new-password" id="p2" oninput="checkMatch()"/>
+            <button type="button" class="eye-btn" onclick="toggleEye('p2',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
+          </div>
+          {% if form.password2.errors %}<div class="ferr"><i class="fas fa-circle-exclamation"></i>{{ form.password2.errors.0 }}</div>{% endif %}
+          <div class="ferr" id="matchMsg" style="display:none;"><i class="fas fa-circle-exclamation"></i> Passwords don't match</div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        <div class="shimmer"></div>
+        <i class="fas fa-user-plus"></i>
+        Create Patient Account
+      </button>
+    </form>
+
+    <div class="footer-links">
+      <span>Are you a Doctor? <a href="{% url 'doctor-register' %}">Register as Doctor</a></span>
+      <span>Already have an account? <a href="{% url 'login' %}">Sign In</a></span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Particles
+  const pts = document.getElementById('pts');
+  for (let i = 0; i < 18; i++) {
+    const d = document.createElement('div');
+    d.className = 'pt';
+    const sz = Math.random() * 6 + 2;
+    d.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*16+10}s;
+      animation-delay:-${Math.random()*16}s;
+      background:rgba(249,115,22,${(Math.random()*0.18+0.04).toFixed(2)});
+    `;
+    pts.appendChild(d);
+  }
+
+  // Eye toggle
+  function toggleEye(id, btn) {
+    const inp = document.getElementById(id);
+    const ic = btn.querySelector('i');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    ic.className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+  }
+
+  // Password strength meter
+  const bars   = [1,2,3,4].map(n => document.getElementById('bar'+n));
+  const lbl    = document.getElementById('pwLabel');
+  const colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+  const labels = ['Weak','Fair','Good','Strong'];
+
+  function checkStrength(val) {
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    bars.forEach((b,i) => {
+      b.style.background = i < score ? colors[score-1] : 'rgba(255,255,255,0.08)';
+    });
+    lbl.textContent = val.length ? labels[score-1] || '' : '';
+    lbl.style.color = val.length ? colors[score-1] : '';
+  }
+
+  // Password match check
+  function checkMatch() {
+    const p1 = document.getElementById('p1').value;
+    const p2 = document.getElementById('p2').value;
+    const msg = document.getElementById('matchMsg');
+    const shell = document.getElementById('p2shell');
+    if (p2.length > 0) {
+      const ok = p1 === p2;
+      msg.style.display = ok ? 'none' : 'flex';
+      shell.style.borderColor = ok ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)';
+    } else {
+      msg.style.display = 'none';
+      shell.style.borderColor = '';
+    }
+  }
+</script>
+
+</body>
+</html>

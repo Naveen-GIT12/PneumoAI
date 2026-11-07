@@ -1,0 +1,213 @@
+{% extends "users/base.html" %}
+{% block title %}Request Second Opinion — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+space grotesk+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--org:#f97316;--grn:#10b981;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(ellipse 50% 45% at 92% 72%,rgba(249,115,22,.06) 0%,transparent 50%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes beamDown{0%{top:0;opacity:0;}4%{opacity:1;}96%{opacity:1;}100%{top:100%;opacity:0;}}
+
+.pg{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Space Grotesk',sans-serif;max-width:1100px;margin:0 auto;}
+.pg-hdr{text-align:center;margin-bottom:32px;animation:fadeUp .7s ease both;}
+.pg-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.pg-eyebrow::before,.pg-eyebrow::after{content:'';width:28px;height:1px;background:rgba(14,165,233,.2);}
+.pg-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;margin-bottom:6px;}
+.pg-sub{color:var(--mu2);font-size:.88rem;}
+
+/* scan summary card */
+.scan-summary{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:20px;animation:fadeUp .7s .1s ease both;position:relative;overflow:hidden;}
+.scan-summary::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--sky),#06b6d4);}
+.ss-img{width:80px;height:80px;border-radius:10px;overflow:hidden;background:#000;flex-shrink:0;}
+.ss-img img{width:100%;height:100%;object-fit:contain;}
+.ss-info{flex:1;}
+.ss-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--sky);margin-bottom:4px;}
+.ss-result{font-family:'Outfit',sans-serif;font-size:1.15rem;font-weight:800;color:white;margin-bottom:4px;}
+.ss-meta{font-size:.78rem;color:var(--mu2);}
+.ss-conf{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.ss-conf-bar{width:120px;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.ss-conf-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#22c55e,var(--sky));}
+.ss-conf-val{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--sky2);font-weight:600;}
+
+/* grid */
+.op-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:20px;align-items:start;}
+@media(max-width:860px){.op-grid{grid-template-columns:1fr;}}
+
+/* card */
+.rc{position:relative;overflow:hidden;background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:20px;backdrop-filter:blur(16px);animation:fadeUp .7s ease both;}
+.rc-beam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,165,233,.4),transparent);animation:beamDown 6s ease-in-out infinite;pointer-events:none;z-index:1;}
+.rc-head{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid rgba(14,165,233,.08);position:relative;z-index:2;}
+.rc-ico{width:28px;height:28px;border-radius:8px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--sky);flex-shrink:0;}
+.rc-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);}
+.rc-body{padding:16px 20px;position:relative;z-index:2;}
+
+/* doctor list */
+.doc-list{display:grid;gap:10px;max-height:480px;overflow-y:auto;padding-right:4px;}
+.doc-list::-webkit-scrollbar{width:3px;}
+.doc-list::-webkit-scrollbar-thumb{background:rgba(14,165,233,.25);border-radius:2px;}
+
+.doc-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(6,13,26,.7);border:1.5px solid rgba(14,165,233,.1);border-radius:12px;cursor:pointer;transition:all .25s;}
+.doc-item:hover{border-color:rgba(14,165,233,.3);background:rgba(14,165,233,.05);}
+.doc-item.selected{border-color:rgba(14,165,233,.55);background:rgba(14,165,233,.1);box-shadow:0 0 0 3px rgba(14,165,233,.1);}
+.doc-item input[type="radio"]{display:none;}
+.doc-ava{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--org));display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;flex-shrink:0;}
+.doc-name{font-weight:700;color:white;font-size:.9rem;margin-bottom:2px;}
+.doc-spec{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--sky);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+.doc-hospital{font-size:.75rem;color:var(--mu2);margin-top:2px;}
+.doc-check{margin-left:auto;width:20px;height:20px;border-radius:50%;border:2px solid rgba(14,165,233,.25);display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0;}
+.doc-item.selected .doc-check{background:var(--sky);border-color:var(--sky);}
+.doc-item.selected .doc-check::after{content:'✓';color:white;font-size:.65rem;font-weight:800;}
+
+/* form fields */
+.field-group{margin-bottom:14px;}
+.field-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:6px;}
+.field-input{width:100%;background:rgba(6,13,26,.9);border:1px solid rgba(14,165,233,.12);border-radius:10px;color:var(--tx);padding:10px 13px;font-family:'Space Grotesk',sans-serif;font-size:.88rem;outline:none;transition:border-color .25s;}
+.field-input:focus{border-color:rgba(14,165,233,.38);}
+textarea.field-input{resize:vertical;min-height:90px;}
+
+/* urgency pills */
+.urgency-row{display:flex;gap:8px;}
+.urg-pill{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:10px;border:1px solid rgba(14,165,233,.12);background:rgba(6,13,26,.7);cursor:pointer;font-size:.8rem;font-weight:600;color:var(--mu2);transition:all .25s;text-align:center;}
+.urg-pill:hover{border-color:rgba(14,165,233,.3);color:var(--sky2);}
+.urg-pill.active-low{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399;}
+.urg-pill.active-normal{background:rgba(14,165,233,.1);border-color:rgba(14,165,233,.3);color:var(--sky2);}
+.urg-pill.active-urgent{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171;}
+.urg-pill input{display:none;}
+
+/* submit */
+.submit-btn{width:100%;height:52px;background:linear-gradient(135deg,var(--sky),#0284c7);border:none;border-radius:12px;color:white;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;position:relative;overflow:hidden;transition:transform .28s cubic-bezier(.34,1.56,.64,1),box-shadow .28s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:18px;}
+.submit-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);transform:translateX(-100%);transition:transform .55s;}
+.submit-btn:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(14,165,233,.38);}
+.submit-btn:hover::before{transform:translateX(100%);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div>
+<div class="pg">
+
+    <div class="pg-hdr">
+        <div class="pg-eyebrow"><i class="fas fa-comments-medical"></i> Patient Portal</div>
+        <h1 class="pg-title">Request Second Opinion</h1>
+        <p class="pg-sub">Choose a specialist doctor to review your scan and provide their expert opinion</p>
+    </div>
+
+    <!-- Scan summary -->
+    <div class="scan-summary">
+        <div class="ss-img"><img src="{{ record.image.url }}" alt="Scan"></div>
+        <div class="ss-info">
+            <div class="ss-label">Your Scan — {{ record.created_at|date:"F j, Y" }}</div>
+            <div class="ss-result">{{ record.predicted_label }}</div>
+            <div class="ss-meta">AI Analysis · {{ record.created_at|date:"H:i" }}</div>
+            <div class="ss-conf">
+                <div class="ss-conf-bar"><div class="ss-conf-fill" style="width:{{ record.confidence|floatformat:0 }}%;"></div></div>
+                <div class="ss-conf-val">{{ record.confidence|floatformat:1 }}% confidence</div>
+            </div>
+        </div>
+        <a href="{% url 'scan-detail' record.pk %}" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:9px;color:var(--sky2);font-size:.78rem;font-weight:600;text-decoration:none;flex-shrink:0;">
+            <i class="fas fa-eye"></i> View Report
+        </a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="doctor_id" id="selectedDoctorId" value="">
+        <div class="op-grid">
+
+            <!-- Doctor list -->
+            <div class="rc" style="animation-delay:.05s;">
+                <div class="rc-beam"></div>
+                <div class="rc-head"><div class="rc-ico"><i class="fas fa-stethoscope"></i></div><span class="rc-lbl">Select a Doctor</span></div>
+                <div class="rc-body">
+                    {% if doctors %}
+                    <div class="doc-list" id="docList">
+                        {% for doc in doctors %}
+                        <div class="doc-item" onclick="selectDoc(this, {{ doc.pk }})">
+                            <div class="doc-ava"><i class="fas fa-user-doctor"></i></div>
+                            <div>
+                                <div class="doc-name">Dr. {{ doc.get_full_name|default:doc.username }}</div>
+                                <div class="doc-spec">{% if doc.doctorprofile %}{{ doc.doctorprofile.specialization }}{% else %}Specialist{% endif %}</div>
+                                <div class="doc-hospital">{% if doc.doctorprofile %}{{ doc.doctorprofile.hospital_name }}{% endif %}</div>
+                            </div>
+                            <div class="doc-check"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:32px;color:var(--mu);">
+                        <i class="fas fa-user-doctor" style="font-size:2rem;opacity:.3;margin-bottom:12px;display:block;"></i>
+                        <p style="font-size:.85rem;">No doctors available yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Request details -->
+            <div class="rc" style="animation-delay:.12s;">
+                <div class="rc-beam" style="animation-delay:2s;"></div>
+                <div class="rc-head"><div class="rc-ico" style="background:rgba(16,185,129,.1);color:#34d399;"><i class="fas fa-pen-to-square"></i></div><span class="rc-lbl">Request Details</span></div>
+                <div class="rc-body">
+
+                    <div class="field-group">
+                        <label class="field-label">Urgency Level</label>
+                        <div class="urgency-row">
+                            <label class="urg-pill" id="urg-low" onclick="setUrgency('low')">
+                                <input type="radio" name="urgency" value="low">
+                                <i class="fas fa-leaf"></i> Low
+                            </label>
+                            <label class="urg-pill active-normal" id="urg-normal" onclick="setUrgency('normal')">
+                                <input type="radio" name="urgency" value="normal" checked>
+                                <i class="fas fa-circle-dot"></i> Normal
+                            </label>
+                            <label class="urg-pill" id="urg-urgent" onclick="setUrgency('urgent')">
+                                <input type="radio" name="urgency" value="urgent">
+                                <i class="fas fa-triangle-exclamation"></i> Urgent
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">Message to Doctor <span style="color:var(--mu);font-size:.55rem;">(Optional)</span></label>
+                        <textarea name="message" class="field-input" placeholder="Describe your concern, symptoms, or specific questions you'd like the doctor to address…"></textarea>
+                    </div>
+
+                    <div style="padding:12px 14px;background:rgba(249,115,22,.04);border:1px solid rgba(249,115,22,.12);border-radius:10px;font-size:.79rem;color:var(--mu2);line-height:1.65;">
+                        <i class="fas fa-circle-info" style="color:var(--org);margin-right:6px;"></i>
+                        The doctor will receive an email notification and review your scan. You'll be notified by email when their review is ready.
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn" disabled style="opacity:.5;">
+                        <i class="fas fa-comments-medical"></i>
+                        <span id="submitTxt">Select a doctor first</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectDoc(el, docId){
+    document.querySelectorAll('.doc-item').forEach(d=>d.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('selectedDoctorId').value=docId;
+    const btn=document.getElementById('submitBtn');
+    btn.disabled=false; btn.style.opacity='1';
+    document.getElementById('submitTxt').textContent='Send Second Opinion Request';
+}
+function setUrgency(val){
+    ['low','normal','urgent'].forEach(v=>{
+        const el=document.getElementById('urg-'+v);
+        el.classList.remove('active-low','active-normal','active-urgent');
+        el.querySelector('input').checked=(v===val);
+    });
+    document.getElementById('urg-'+val).classList.add('active-'+val);
+}
+</script>
+{% endblock %}

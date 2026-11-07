@@ -1,0 +1,105 @@
+{% extends 'users/base.html' %}
+{% block title %}Dashboard — PneumoAI{% endblock %}
+{% block extra_css %}
+<style>
+    .dashboard {
+        padding: 50px 40px;
+        background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(14,165,233,0.08) 0%, transparent 70%);
+        min-height: calc(100vh - 70px);
+    }
+
+    .dash-greeting {
+        margin-bottom: 36px;
+    }
+
+    .dash-greeting .tag {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: #0ea5e9; font-size: 0.78rem; font-weight: 700;
+        letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    }
+
+    .dash-greeting h1 {
+        font-family: 'Syne', sans-serif;
+        font-size: 2rem; font-weight: 800;
+    }
+
+    .dash-greeting span { color: #0ea5e9; }
+
+    .quick-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .quick-card {
+        background: rgba(30,41,59,0.7);
+        border: 1px solid rgba(148,163,184,0.1);
+        border-radius: 16px; padding: 28px;
+        text-decoration: none; color: inherit;
+        display: flex; align-items: center; gap: 20px;
+        transition: all 0.3s;
+    }
+
+    .quick-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(14,165,233,0.25);
+        color: inherit; text-decoration: none;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+    }
+
+    .quick-icon {
+        width: 54px; height: 54px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; flex-shrink: 0;
+    }
+
+    .q-blue .quick-icon { background: rgba(14,165,233,0.15); color: #0ea5e9; }
+    .q-orange .quick-icon { background: rgba(249,115,22,0.15); color: #f97316; }
+    .q-green .quick-icon { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .q-purple .quick-icon { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+
+    .quick-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .quick-card p { font-size: 0.82rem; color: #64748b; margin: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dash-greeting">
+        <div class="tag"><i class="fas fa-house"></i> Dashboard</div>
+        <h1>Welcome back, <span>{{ user.get_full_name|default:user.username }}</span></h1>
+    </div>
+
+    <div class="quick-cards">
+        <a href="{% url 'Deploy_8' %}" class="quick-card q-blue">
+            <div class="quick-icon"><i class="fas fa-microscope"></i></div>
+            <div>
+                <h3>New Detection</h3>
+                <p>Upload and analyse a chest X-ray</p>
+            </div>
+        </a>
+        <a href="{% url 'Database' %}" class="quick-card q-orange">
+            <div class="quick-icon"><i class="fas fa-database"></i></div>
+            <div>
+                <h3>View Database</h3>
+                <p>Browse all previous results</p>
+            </div>
+        </a>
+        <a href="{% url 'users-profile' %}" class="quick-card q-green">
+            <div class="quick-icon"><i class="fas fa-circle-user"></i></div>
+            <div>
+                <h3>My Profile</h3>
+                <p>Update your account settings</p>
+            </div>
+        </a>
+        <a href="/" class="quick-card q-purple">
+            <div class="quick-icon"><i class="fas fa-circle-info"></i></div>
+            <div>
+                <h3>About System</h3>
+                <p>Learn how PneumoAI works</p>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

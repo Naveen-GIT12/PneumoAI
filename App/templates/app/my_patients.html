@@ -1,0 +1,134 @@
+{% extends "users/base.html" %}
+{% block title %}My Patients — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+space grotesk+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--org:#f97316;--grn:#10b981;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+.pg{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Space Grotesk',sans-serif;}
+.pg-hdr{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px;animation:fadeUp .7s ease both;}
+.pg-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pg-eyebrow::before{content:'';width:22px;height:1px;background:var(--sky);}
+.pg-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;}
+
+/* Assign form */
+.assign-form{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:22px 24px;margin-bottom:28px;animation:fadeUp .7s .1s ease both;}
+.form-row{display:flex;gap:12px;align-items:flex-end;}
+.fi{flex:1;}
+.fi label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:6px;}
+.fi input,.fi textarea{width:100%;background:rgba(6,13,26,.9);border:1px solid rgba(14,165,233,.12);border-radius:10px;color:var(--tx);padding:10px 13px;font-family:'Space Grotesk',sans-serif;font-size:.88rem;outline:none;transition:border-color .25s;}
+.fi input:focus,.fi textarea:focus{border-color:rgba(14,165,233,.38);}
+.fi input::placeholder{color:#1b3047;}
+.btn-assign{padding:10px 22px;background:linear-gradient(135deg,var(--sky),#0284c7);border:none;border-radius:10px;color:white;font-family:'Outfit',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap;transition:all .25s;}
+.btn-assign:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(14,165,233,.35);}
+
+/* patient grid */
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+.pt-card{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:22px;backdrop-filter:blur(14px);animation:cardIn .5s ease both;transition:all .3s;}
+.pt-card:hover{border-color:rgba(14,165,233,.25);transform:translateY(-4px);}
+.pt-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--org));display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:white;margin-bottom:14px;}
+.pt-name{font-size:.97rem;font-weight:700;color:white;margin-bottom:3px;}
+.pt-meta{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mu);margin-bottom:12px;}
+.pt-stats{display:flex;gap:14px;margin-bottom:14px;}
+.pt-stat{text-align:center;}
+.pt-stat-val{font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:800;color:var(--sky);}
+.pt-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;}
+.pt-latest{padding:8px 11px;background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.1);border-radius:8px;font-size:.78rem;color:var(--mu2);margin-bottom:12px;}
+.pt-latest strong{color:var(--sky2);}
+.pt-actions{display:flex;gap:8px;}
+.pt-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border-radius:8px;font-size:.78rem;font-weight:600;text-decoration:none;transition:all .25s;border:1px solid;}
+.pt-btn-view{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.2);color:var(--sky2);}
+.pt-btn-view:hover{background:rgba(14,165,233,.18);color:white;text-decoration:none;}
+.pt-btn-remove{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.18);color:#f87171;}
+.pt-btn-remove:hover{background:rgba(239,68,68,.18);color:white;text-decoration:none;}
+
+.empty{text-align:center;padding:60px 24px;grid-column:1/-1;}
+.empty i{font-size:2.5rem;color:rgba(14,165,233,.25);margin-bottom:14px;}
+.empty p{color:var(--mu);font-size:.9rem;}
+
+@media(max-width:700px){.pg{padding:24px 16px;}.form-row{flex-direction:column;}.btn-assign{width:100%;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div>
+<div class="pg">
+
+    <div class="pg-hdr">
+        <div>
+            <div class="pg-eyebrow"><i class="fas fa-user-injured"></i> Doctor Portal</div>
+            <h1 class="pg-title">My Patients</h1>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--mu2);background:rgba(14,165,233,.07);border:1px solid var(--bd);padding:8px 14px;border-radius:10px;">
+            {{ links|length }} Assigned Patient{{ links|length|pluralize }}
+        </span>
+    </div>
+
+    <!-- Assign patient form -->
+    <div class="assign-form">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);margin-bottom:14px;display:flex;align-items:center;gap:8px;"><i class="fas fa-user-plus"></i> Assign New Patient</div>
+        <form method="post" action="{% url 'assign-patient' %}">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="fi">
+                    <label>Patient Username or Email *</label>
+                    <input type="text" name="identifier" placeholder="patient_username or email@example.com" required>
+                </div>
+                <div class="fi">
+                    <label>Notes (optional)</label>
+                    <input type="text" name="notes" placeholder="Referral reason, department…">
+                </div>
+                <button type="submit" class="btn-assign"><i class="fas fa-user-plus"></i> Assign</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Patient grid -->
+    <div class="pt-grid">
+        {% for link in links %}
+        <div class="pt-card" style="animation-delay:{{ forloop.counter0 }}0ms;">
+            <div class="pt-avatar"><i class="fas fa-user-injured"></i></div>
+            <div class="pt-name">{{ link.patient.get_full_name|default:link.patient.username }}</div>
+            <div class="pt-meta">{{ link.patient.email }} · Assigned {{ link.assigned_at|date:"d M Y" }}</div>
+            <div class="pt-stats">
+                <div class="pt-stat">
+                    <div class="pt-stat-val">{{ link.patient_scan_count }}</div>
+                    <div class="pt-stat-lbl">Scans</div>
+                </div>
+                {% if link.latest_scan %}
+                <div class="pt-stat">
+                    <div class="pt-stat-val" style="font-size:.9rem;">{{ link.latest_scan.predicted_label }}</div>
+                    <div class="pt-stat-lbl">Last Result</div>
+                </div>
+                {% endif %}
+            </div>
+            {% if link.notes %}
+            <div class="pt-latest"><strong>Notes:</strong> {{ link.notes }}</div>
+            {% endif %}
+            {% if link.latest_scan %}
+            <div class="pt-latest">
+                <strong>Last scan:</strong> {{ link.latest_scan.created_at|date:"d M Y" }} — {{ link.latest_scan.predicted_label }}
+                ({{ link.latest_scan.confidence|floatformat:1 }}% confidence)
+            </div>
+            {% endif %}
+            <div class="pt-actions">
+                <a href="{% url 'patient-scans' link.patient.pk %}" class="pt-btn pt-btn-view"><i class="fas fa-eye"></i> View Scans</a>
+                <a href="{% url 'unassign-patient' link.pk %}" class="pt-btn pt-btn-remove" onclick="return confirm('Unassign this patient?')"><i class="fas fa-xmark"></i> Remove</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty">
+            <i class="fas fa-user-injured"></i>
+            <p>No patients assigned yet. Enter a patient's username above to assign them.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

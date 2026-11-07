@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lato:wght@100;400;700&display=swap');
+
+* {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+}
+
+html {
+   font-size: 62.5%;
+}
+
+body {
+   font-family: 'Lato', sans-serif;
+   font-size: 1.6rem;
+   background-color: #d9efed;
+   color: #222;
+   padding: 0 5px;
+   background-image: url("/static/images/4.jpg"); 
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.container {
+   min-width: 20rem;
+   max-width: 65rem;
+   margin: 4rem auto;
+}
+
+.heading,
+.survey-form {
+   background-color: #7cbe24;
+   padding: 3rem;
+   border-radius: 1rem;
+   margin-bottom: 3rem;
+   box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.15);
+}
+
+.heading {
+   position: relative;
+}
+
+.survey-form {
+   font-size: 1.8rem;
+}
+
+.green-bar {
+   background-color: #008080;
+   height: 1rem;
+   width: 100%;
+   position: absolute;
+   top: 0;
+   left: 0;
+   border-top-left-radius: 1rem;
+   border-top-right-radius: 1rem;
+}
+
+.main-heading {
+   font-size: 3.5rem;
+   margin-bottom: 2rem;
+}
+
+.main-description {
+   margin-bottom: 2rem;
+}
+
+.instructions {
+   font-size: 1.5rem;
+   margin-top: 1rem;
+}
+
+.required {
+   font-size: 1.6rem;
+   color: #d61212;
+}
+
+label {
+   display: block;
+   font-size: 1.8rem;
+   margin: 2rem 0;
+}
+
+input,
+select,
+textarea {
+   display: block;
+   width: 100%;
+   margin: 2rem 0;
+   font-size: 1.6rem;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+   display: inline-block;
+   width: unset;
+   margin: unset;
+   margin-bottom: 1rem;
+   margin-right: .5rem;
+}
+
+.name,
+.email,
+.age{
+   min-height: 2rem;
+   padding: 1rem 0;
+   border: none;
+   border-bottom: 1px solid #bcb9b9;
+}
+
+.dropdown {
+   min-height: 2rem;
+   padding: 1rem 0;
+   background-color: transparent;
+   border: 1px solid #bcb9b9;
+   color: #767676;
+}
+
+option {
+   font-size: 1.6rem;
+   color: #222;
+}
+
+.radio-btn-description,
+.checkbox-description {
+   margin: 2rem 0;
+}
+
+.radio-btn-label,
+.checkbox-label {
+   margin: unset;
+}
+
+textarea {
+   font-size: 1.8rem;
+   font-family: "Lato", sans-serif;
+   border: 1px solid #bcb9b9;
+}
+
+.submit {
+   font-size: 1.7rem;
+   font-weight: 600;
+   text-transform: uppercase;
+   letter-spacing: 1px;
+   color: #f4f4f4;
+   background-color: #008080;
+   border: 3px solid #008080;
+   border-radius: 1rem;
+   width: 15rem;
+   padding: 1rem 2rem;
+   margin: 4rem auto 2rem auto;
+   cursor: pointer;
+   transition: all .3s;
+}
+
+.submit:hover {
+   background-color: transparent;
+   color: #222;
+}
+
+footer {
+   text-align: center;
+   margin-top: 4rem;
+}
+
+a:link,
+a:visited {
+   color: #008080;
+}
+</style>
+<body>
+  <main>
+    <div class="container">
+      <header class="heading">
+        <div class="green-bar"></div>
+        <h1 id="title" class="main-heading">Prediction Form</h1>
+        <p id="description" class="main-description">
+          Thank you for taking the time to help us improve future Predition.
+        </p>
+        <hr>
+        <p class="instructions"><span class="required">*</span> Indicates question are required to be answered</p>
+      </header>
+      
+      <form action="{% url 'Deploy_9' %}" method="post" id="survey-form" class="survey-form">
+        {% csrf_token %}
+        <label for="name" id="name-label">Age<span class="required">*</span></label>
+        <input type="text" name="Age" id="name" class="name" placeholder="Enter your full name" required>
+        
+        <label for="email" id="email-label">Gender<span class="required">*</span></label>
+        <input type="text" name="Gender" id="email" class="email" placeholder="Enter your Gender" required>
+        
+        <label for="number" id="number-label">Polyuria</label>
+        <input type="text" name="Polyuria" id="number" class="age" min="13" max="110" placeholder="Enter your Polyuria">
+        
+        <label for="number" id="number-label">Polydipsia</label>
+        <input type="text" name="Polydipsia" id="number" class="age" min="13" max="110" placeholder="Enter your Polydipsia">
+
+        <label for="number" id="number-label">Sudden_weight_loss</label>
+        <input type="text" name="sudden_weight_loss" id="number" class="age" min="13" max="110" placeholder="Enter your sudden weight loss">
+
+        <label for="number" id="number-label">weakness</label>
+        <input type="text" name="weakness" id="number" class="age" min="13" max="110" placeholder="Enter your weakness">
+
+        <label for="number" id="number-label">Polyphagia</label>
+        <input type="text" name="Polyphagia" id="number" class="age" min="13" max="110" placeholder="Enter your Polyphagia">
+
+        <label for="number" id="number-label">Genital_Thrush</label>
+        <input type="text" name="Genital_thrush" id="number" class="age" min="13" max="110" placeholder="Enter your Genital thrush">
+
+        <label for="number" id="number-label">visual_Blurring</label>
+        <input type="text" name="visual_blurring" id="number" class="age" min="13" max="110" placeholder="Enter your visual blurring">
+
+        <label for="number" id="number-label">Itching</label>
+        <input type="text" name="Itching" id="number" class="age" min="13" max="110" placeholder="Enter your Itching">
+        
+        <label for="number" id="number-label">Irritability</label>
+        <input type="text" name="Irritability" id="number" class="age" min="13" max="110" placeholder="Enter your Irritability">
+        
+        <label for="number" id="number-label">Delayed_healing</label>
+        <input type="text" name="delayed_healing" id="number" class="age" min="13" max="110" placeholder="Enter your delayed healing">
+        
+        <label for="number" id="number-label">Partial_Paresis</label>
+        <input type="text" name="partial_paresis" id="number" class="age" min="13" max="110" placeholder="Enter your partial paresis">
+    
+        <label for="number" id="number-label">Muscle_Stiffness</label>
+        <input type="text" name="muscle_stiffness" id="number" class="age" min="13" max="110" placeholder="Enter your muscle stiffness">
+    
+        <label for="number" id="number-label">Alopecia</label>
+        <input type="text" name="Alopecia" id="number" class="age" min="13" max="110" placeholder="Enter your Alopecia">
+    
+        <label for="number" id="number-label">Obesity</label>
+        <input type="text" name="Obesity" id="number" class="age" min="13" max="110" placeholder="Enter your Obesity">
+    
+        <!-- <label for="number" id="number-label">Age</label>
+        <input type="number" name="age" id="number" class="age" min="13" max="110" placeholder="Enter your age"> -->
+    
+    
+        <input type="submit" id="submit" class="submit" value="Submit">
+       
+      <a href="/">Back to Home Page</a>
+    </div>
+      </form>
+      
+      <!-- <footer>
+        <p>Created by <a href="https://twitter.com/SandipanIO">Sandipan Mukherjee</a></p>
+      </footer> -->
+    </div>
+  </main>
+</body>
+</html>

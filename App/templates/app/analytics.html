@@ -1,0 +1,188 @@
+{% extends "users/base.html" %}
+{% block title %}Analytics — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--org:#f97316;--grn:#10b981;--pur:#8b5cf6;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 95% 75%,rgba(249,115,22,.06) 0%,transparent 55%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes countUp{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:scale(1);}}
+
+.an-page{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Plus Jakarta Sans',sans-serif;}
+.an-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;animation:fadeUp .7s ease both;}
+.an-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.an-eyebrow::before{content:'';width:22px;height:1px;background:var(--sky);}
+.an-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;}
+
+/* KPI cards row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;animation:fadeUp .7s .1s ease both;}
+.kpi{position:relative;overflow:hidden;background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:22px 20px;backdrop-filter:blur(16px);transition:all .3s;}
+.kpi:hover{transform:translateY(-4px);border-color:rgba(14,165,233,.25);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.blue::before{background:linear-gradient(90deg,var(--sky),var(--sky2));}
+.kpi.grn::before{background:linear-gradient(90deg,var(--grn),#34d399);}
+.kpi.org::before{background:linear-gradient(90deg,var(--org),#fb923c);}
+.kpi.pur::before{background:linear-gradient(90deg,var(--pur),#a78bfa);}
+.kpi-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:14px;}
+.kpi.blue .kpi-ico{background:rgba(14,165,233,.12);color:var(--sky);}
+.kpi.grn  .kpi-ico{background:rgba(16,185,129,.12);color:var(--grn);}
+.kpi.org  .kpi-ico{background:rgba(249,115,22,.12);color:var(--org);}
+.kpi.pur  .kpi-ico{background:rgba(139,92,246,.12);color:var(--pur);}
+.kpi-val{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;margin-bottom:3px;animation:countUp .6s ease both;}
+.kpi-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);}
+.kpi-change{font-size:.75rem;margin-top:6px;font-weight:600;}
+.kpi-change.up{color:#4ade80;} .kpi-change.dn{color:#f87171;} .kpi-change.neu{color:var(--mu2);}
+
+/* Chart cards */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.chart-card{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:22px;backdrop-filter:blur(16px);}
+.chart-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid rgba(14,165,233,.1);}
+.chart-title i{width:26px;height:26px;border-radius:7px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;font-size:.75rem;}
+canvas{max-height:280px;}
+
+@media(max-width:900px){
+    .an-page{padding:24px 16px;}
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .chart-grid,.chart-grid-2{grid-template-columns:1fr;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div>
+<div class="an-page">
+
+    <div class="an-hdr">
+        <div>
+            <div class="an-eyebrow"><i class="fas fa-chart-line"></i> Reports</div>
+            <h1 class="an-title">{% if is_doctor %}Practice{% else %}My{% endif %} Analytics</h1>
+        </div>
+        <a href="{% url 'scan-history' %}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:10px;color:var(--sky2);font-size:.82rem;font-weight:600;text-decoration:none;">
+            <i class="fas fa-clock-rotate-left"></i> View History
+        </a>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-row">
+        <div class="kpi blue">
+            <div class="kpi-ico"><i class="fas fa-x-ray"></i></div>
+            <div class="kpi-val">{{ total }}</div>
+            <div class="kpi-lbl">Total Scans</div>
+            <div class="kpi-change {% if week_change > 0 %}up{% elif week_change < 0 %}dn{% else %}neu{% endif %}">
+                {% if week_change > 0 %}↑{% elif week_change < 0 %}↓{% else %}→{% endif %}
+                {{ week_change|default:0 }} this week
+            </div>
+        </div>
+        <div class="kpi grn">
+            <div class="kpi-ico"><i class="fas fa-chart-line"></i></div>
+            <div class="kpi-val">{{ avg_conf }}%</div>
+            <div class="kpi-lbl">Avg Confidence</div>
+            <div class="kpi-change neu">Across all scans</div>
+        </div>
+        <div class="kpi org">
+            <div class="kpi-ico"><i class="fas fa-calendar-week"></i></div>
+            <div class="kpi-val">{{ this_week }}</div>
+            <div class="kpi-lbl">Scans This Week</div>
+            <div class="kpi-change neu">Last 7 days</div>
+        </div>
+        <div class="kpi pur">
+            <div class="kpi-ico"><i class="fas fa-virus"></i></div>
+            <div class="kpi-val">{{ top_condition.predicted_label|default:"—" }}</div>
+            <div class="kpi-lbl">Top Condition</div>
+            <div class="kpi-change neu">{{ top_condition.count|default:0 }} cases</div>
+        </div>
+    </div>
+
+    <!-- Main charts -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-line"></i> Monthly Scan Volume</div>
+            <canvas id="monthlyChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-pie"></i> Condition Breakdown</div>
+            <canvas id="condChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-grid-2">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-column"></i> Severity Distribution</div>
+            <canvas id="sevChart"></canvas>
+        </div>
+        <div class="chart-card" style="grid-column:span 2;">
+            <div class="chart-title"><i class="fas fa-wave-square"></i> Confidence Score Trend (Last 20 Scans)</div>
+            <canvas id="confChart"></canvas>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#5a7fa0';
+Chart.defaults.borderColor = 'rgba(14,165,233,0.08)';
+
+const BLUE='rgba(14,165,233,1)',BLUE2='rgba(14,165,233,0.15)';
+const ORG='rgba(249,115,22,1)';const GRN='rgba(16,185,129,1)';
+const PUR='rgba(139,92,246,1)';const RED='rgba(239,68,68,1)';
+
+const COND_COLORS={
+    'COVID-19':RED,'Normal':GRN,'Lung Opacity':PUR,
+    'Bacterial Pneumonia':ORG,'Viral Pneumonia':'rgba(56,189,248,1)'
+};
+
+// Monthly line chart
+new Chart(document.getElementById('monthlyChart'),{
+    type:'line',
+    data:{
+        labels:{{ monthly_labels|safe }},
+        datasets:[{
+            label:'Scans',data:{{ monthly_counts|safe }},
+            borderColor:BLUE,backgroundColor:BLUE2,
+            fill:true,tension:.4,pointBackgroundColor:BLUE,
+            pointRadius:4,pointHoverRadius:7,
+        }]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(14,165,233,0.06)'}},x:{grid:{color:'rgba(14,165,233,0.06)'}}}}
+});
+
+// Doughnut
+const condLabels={{cond_labels|safe}};
+const condColors=condLabels.map(l=>COND_COLORS[l]||BLUE);
+new Chart(document.getElementById('condChart'),{
+    type:'doughnut',
+    data:{labels:condLabels,datasets:[{data:{{cond_counts|safe}},backgroundColor:condColors,borderColor:'rgba(8,16,30,0.8)',borderWidth:3,hoverOffset:10}]},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:14,font:{size:10,family:'JetBrains Mono'}}}},cutout:'65%'}
+});
+
+// Severity bar
+const sevColors={'None':GRN,'Low':BLUE,'Moderate':ORG,'Severe':RED};
+const sevLabels={{sev_labels|safe}};
+new Chart(document.getElementById('sevChart'),{
+    type:'bar',
+    data:{labels:sevLabels,datasets:[{label:'Count',data:{{sev_counts|safe}},backgroundColor:sevLabels.map(l=>sevColors[l]||BLUE),borderRadius:8,borderSkipped:false}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(14,165,233,0.06)'}},x:{grid:{display:false}}}}
+});
+
+// Confidence line
+new Chart(document.getElementById('confChart'),{
+    type:'line',
+    data:{
+        labels:{{ conf_labels|safe }},
+        datasets:[{
+            label:'Confidence %',data:{{ conf_values|safe }},
+            borderColor:GRN,backgroundColor:'rgba(16,185,129,0.1)',
+            fill:true,tension:.4,pointBackgroundColor:GRN,pointRadius:4,pointHoverRadius:7,
+        }]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{min:0,max:100,grid:{color:'rgba(14,165,233,0.06)'}},x:{grid:{display:false}}}}
+});
+</script>
+{% endblock %}

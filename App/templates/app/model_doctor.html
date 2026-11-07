@@ -1,0 +1,325 @@
+{% extends "users/base.html" %}
+{% block title %}Doctor Scan — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+space grotesk+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--skyd:#0284c7;--org:#f97316;--em:#06b6d4;--grn:#10b981;--c0:#03080f;--c1:#060e1c;--bd:rgba(14,165,233,0.12);--bd2:rgba(14,165,233,0.25);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+.up-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 12% 35%,rgba(14,165,233,0.09) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 92% 72%,rgba(249,115,22,0.06) 0%,transparent 55%),var(--c0);}
+.up-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,0.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,0.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+.up-pts{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.upt{position:absolute;border-radius:50%;animation:ptF linear infinite;}
+@keyframes ptF{0%{transform:translateY(110vh);opacity:0;}8%{opacity:1;}92%{opacity:.55;}100%{transform:translateY(-5vh);opacity:0;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes beamDown{0%{top:0;opacity:0;}4%{opacity:1;}96%{opacity:1;}100%{top:100%;opacity:0;}}
+@keyframes gradFlow{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(14,165,233,.7);}70%{box-shadow:0 0 0 10px rgba(14,165,233,0);}100%{box-shadow:0 0 0 0 rgba(14,165,233,0);}}
+@keyframes orbSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.up-page{position:relative;z-index:1;min-height:calc(100vh - 70px);display:flex;align-items:flex-start;justify-content:center;padding:44px 24px;font-family:'Space Grotesk',sans-serif;}
+.up-wrap{width:100%;max-width:900px;}
+
+.up-hdr{text-align:center;margin-bottom:32px;animation:fadeUp .8s ease both;}
+.up-orbital{position:relative;width:96px;height:96px;margin:0 auto 20px;}
+.orb-ring{position:absolute;border-radius:50%;border-style:solid;border-color:transparent;animation:orbSpin linear infinite;}
+.or1{inset:0;border-width:1px;border-top-color:rgba(14,165,233,.5);border-right-color:rgba(14,165,233,.18);animation-duration:9s;}
+.or2{inset:13px;border-width:1px;border-bottom-color:rgba(249,115,22,.32);animation-duration:14s;animation-direction:reverse;}
+.odot{position:absolute;border-radius:50%;top:-4px;left:calc(50% - 4px);width:8px;height:8px;}
+.odot-sky{background:var(--sky);box-shadow:0 0 12px rgba(14,165,233,1);}
+.odot-org{background:var(--org);box-shadow:0 0 10px rgba(249,115,22,.9);width:6px;height:6px;top:-3px;left:calc(50% - 3px);}
+.orb-core{position:absolute;inset:26px;border-radius:50%;background:radial-gradient(circle at 38% 36%,rgba(14,165,233,.22),rgba(14,165,233,.04));border:1px solid rgba(14,165,233,.3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--sky);}
+.up-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;}
+.up-eyebrow::before,.up-eyebrow::after{content:'';width:28px;height:1px;background:var(--bd);}
+.edot{width:7px;height:7px;border-radius:50%;background:var(--sky);animation:ripple 2s ease-out infinite;}
+.up-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;margin-bottom:6px;}
+.up-title span{background:linear-gradient(110deg,var(--sky2),var(--em));background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradFlow 4s ease infinite;}
+.up-sub{color:var(--mu2);font-size:.88rem;font-weight:300;}
+
+.doc-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:100px;padding:5px 16px;font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;color:var(--sky2);letter-spacing:.05em;text-transform:uppercase;margin-top:12px;}
+
+.main-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:20px;align-items:start;}
+@media(max-width:860px){.main-grid{grid-template-columns:1fr;}}
+
+.rc{position:relative;overflow:hidden;background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:20px;backdrop-filter:blur(16px);animation:fadeUp .7s ease both;}
+.rc-beam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,165,233,.4),transparent);animation:beamDown 6s ease-in-out infinite;pointer-events:none;z-index:1;}
+.ck{position:absolute;width:20px;height:20px;opacity:.35;z-index:2;}
+.ck.tl{top:10px;left:10px;border-top:1.5px solid var(--sky);border-left:1.5px solid var(--sky);}
+.ck.tr{top:10px;right:10px;border-top:1.5px solid var(--sky);border-right:1.5px solid var(--sky);}
+.ck.bl{bottom:10px;left:10px;border-bottom:1.5px solid var(--sky);border-left:1.5px solid var(--sky);}
+.ck.br{bottom:10px;right:10px;border-bottom:1.5px solid var(--sky);border-right:1.5px solid var(--sky);}
+.rc-head{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid rgba(14,165,233,.08);position:relative;z-index:2;}
+.rc-ico{width:28px;height:28px;border-radius:8px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--sky);flex-shrink:0;}
+.rc-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);}
+.rc-body{padding:16px 20px;position:relative;z-index:2;}
+
+.drop-zone{position:relative;border:2px dashed rgba(14,165,233,.22);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(14,165,233,.02);margin-bottom:0;overflow:hidden;}
+.drop-zone:hover,.drop-zone.drag{border-color:rgba(14,165,233,.55);background:rgba(14,165,233,.05);}
+.drop-zone.has-file{border-style:solid;border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.025);}
+.drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-ico{position:relative;z-index:2;width:56px;height:56px;margin:0 auto 14px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.18);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--sky);transition:all .3s;}
+.drop-zone:hover .drop-ico{background:rgba(14,165,233,.16);transform:translateY(-3px);}
+.drop-zone.has-file .drop-ico{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:var(--grn);}
+.drop-title{position:relative;z-index:2;font-weight:700;color:white;margin-bottom:4px;}
+.drop-sub{position:relative;z-index:2;font-size:.78rem;color:var(--mu);}
+
+.preview-box{display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(14,165,233,.18);}
+.preview-box img{width:100%;max-height:240px;object-fit:contain;background:#000;display:block;}
+.preview-footer{padding:9px 13px;background:rgba(14,165,233,.05);border-top:1px solid rgba(14,165,233,.12);display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.65rem;}
+.preview-footer i{color:var(--grn);}
+.preview-footer span{flex:1;color:var(--sky2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prev-clear{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;color:#f87171;font-size:.72rem;padding:3px 8px;cursor:pointer;}
+
+.field-group{margin-bottom:14px;}
+.field-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:6px;}
+.field-input{width:100%;background:rgba(6,13,26,.9);border:1px solid rgba(14,165,233,.12);border-radius:10px;color:var(--tx);padding:10px 13px;font-family:'Space Grotesk',sans-serif;font-size:.88rem;outline:none;transition:all .25s;}
+.field-input:focus{border-color:rgba(14,165,233,.38);background:rgba(14,165,233,.04);box-shadow:0 0 0 3px rgba(14,165,233,.07);}
+.field-input::placeholder{color:#1b3047;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+textarea.field-input{resize:vertical;min-height:72px;}
+
+/* ── GENDER SELECT FIX ─────────────────────────────────── */
+/* Custom wrapper so we control the dropdown arrow */
+.select-wrap{position:relative;}
+.select-wrap::after{
+    content:'\f107'; /* fa-chevron-down */
+    font-family:'Font Awesome 6 Free';
+    font-weight:900;
+    position:absolute;
+    right:13px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--sky);
+    pointer-events:none;
+    font-size:.8rem;
+}
+select.field-input{
+    cursor:pointer;
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    padding-right:36px; /* room for arrow */
+    /* Force light background on the native dropdown list */
+    background-color:rgba(6,13,26,.9);
+    color:var(--tx);
+}
+/* Style the options themselves — browsers respect color/background on <option> */
+select.field-input option{
+    background-color:#0d1f33;
+    color:#d4eaf8;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:.88rem;
+    padding:8px 12px;
+}
+select.field-input option:disabled,
+select.field-input option[value=""]{
+    color:#3d5a73;
+}
+select.field-input option:hover,
+select.field-input option:checked{
+    background-color:#0ea5e9;
+    color:#ffffff;
+}
+/* ────────────────────────────────────────────────────────── */
+
+.sec-div{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin:18px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(14,165,233,.1);}
+.sec-div::before{content:'';width:16px;height:1px;background:var(--sky);}
+
+.submit-btn{width:100%;height:52px;background:linear-gradient(135deg,var(--sky),var(--skyd));border:none;border-radius:12px;color:white;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;position:relative;overflow:hidden;transition:transform .28s cubic-bezier(.34,1.56,.64,1),box-shadow .28s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:18px;}
+.submit-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);transform:translateX(-100%);transition:transform .55s;}
+.submit-btn:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(14,165,233,.38);}
+.submit-btn:hover::before{transform:translateX(100%);}
+.submit-btn.loading{pointer-events:none;background:linear-gradient(135deg,#0284c7,#075985);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="up-bg"></div><div class="up-mesh"></div><div class="up-pts" id="upts"></div>
+<div class="up-page">
+<div class="up-wrap">
+
+    <div class="up-hdr">
+        <div class="up-orbital">
+            <div class="orb-ring or1"><div class="odot odot-sky"></div></div>
+            <div class="orb-ring or2"><div class="odot odot-org"></div></div>
+            <div class="orb-core"><i class="fas fa-stethoscope"></i></div>
+        </div>
+        <div class="up-eyebrow"><div class="edot"></div> Doctor Portal <div class="edot"></div></div>
+        <h1 class="up-title">Patient <span>X-Ray Analysis</span></h1>
+        <p class="up-sub">Upload chest X-ray and enter patient details to generate a complete diagnostic report</p>
+        {% if doctor_profile %}
+        <div class="doc-badge">
+            <i class="fas fa-id-badge"></i>
+            Dr. {{ request.user.get_full_name }} &middot; {{ doctor_profile.specialization }} &middot; {{ doctor_profile.hospital_name }}
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="upForm">
+        {% csrf_token %}
+        <div class="main-grid">
+
+            <!-- LEFT: X-Ray Upload -->
+            <div class="rc" style="animation-delay:.05s;">
+                <div class="rc-beam"></div>
+                <div class="ck tl"></div><div class="ck tr"></div><div class="ck bl"></div><div class="ck br"></div>
+                <div class="rc-head">
+                    <div class="rc-ico"><i class="fas fa-x-ray"></i></div>
+                    <span class="rc-lbl">Chest X-Ray Upload</span>
+                </div>
+                <div class="rc-body">
+                    <div class="drop-zone" id="dropZone">
+                        {{ form.image }}
+                        <div class="drop-ico"><i class="fas fa-cloud-arrow-up" id="dropIco"></i></div>
+                        <div class="drop-title" id="dropTitle">Drop X-Ray here</div>
+                        <div class="drop-sub" id="dropSub">JPG, PNG, DICOM &middot; Max 10MB</div>
+                    </div>
+                    <div class="preview-box" id="prevBox">
+                        <img id="prevImg" src="" alt="Preview">
+                        <div class="preview-footer">
+                            <i class="fas fa-circle-check"></i>
+                            <span id="prevName"></span>
+                            <button type="button" class="prev-clear" id="clearBtn"><i class="fas fa-xmark"></i> Remove</button>
+                        </div>
+                    </div>
+                    {% if form.image.errors %}
+                    <p style="color:#f87171;font-size:.8rem;margin-top:8px;">{{ form.image.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- RIGHT: Patient Details -->
+            <div class="rc" style="animation-delay:.12s;">
+                <div class="rc-beam" style="animation-delay:2s;"></div>
+                <div class="ck tl"></div><div class="ck tr"></div><div class="ck bl"></div><div class="ck br"></div>
+                <div class="rc-head">
+                    <div class="rc-ico" style="background:rgba(16,185,129,.1);color:#34d399;">
+                        <i class="fas fa-user-injured"></i>
+                    </div>
+                    <span class="rc-lbl">Patient Information</span>
+                </div>
+                <div class="rc-body">
+
+                    <div class="sec-div"><i class="fas fa-circle-dot"></i> Identification</div>
+
+                    <div class="field-row">
+                        <div class="field-group">
+                            <label class="field-label">Patient ID *</label>
+                            <input type="text" name="patient_id" class="field-input" placeholder="PAT-2024-001" required value="{{ form.patient_id.value|default:'' }}">
+                            {% if form.patient_id.errors %}<p style="color:#f87171;font-size:.75rem;margin-top:4px;">{{ form.patient_id.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Date X-Ray Taken *</label>
+                            <input type="date" name="xray_date" class="field-input" required value="{{ form.xray_date.value|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">Patient Full Name *</label>
+                        <input type="text" name="patient_name" class="field-input" placeholder="Full name" required value="{{ form.patient_name.value|default:'' }}">
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field-group">
+                            <label class="field-label">Age (years) *</label>
+                            <input type="number" name="patient_age" class="field-input" placeholder="35" min="0" max="120" required value="{{ form.patient_age.value|default:'' }}">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Gender *</label>
+                            <!-- Wrapped in .select-wrap for custom arrow -->
+                            <div class="select-wrap">
+                                <select name="patient_gender" class="field-input" required>
+                                    <option value="" disabled {% if not form.patient_gender.value %}selected{% endif %}>— Select gender —</option>
+                                    <option value="Male"   {% if form.patient_gender.value == 'Male'   %}selected{% endif %}>&#9794; Male</option>
+                                    <option value="Female" {% if form.patient_gender.value == 'Female' %}selected{% endif %}>&#9792; Female</option>
+                                    <option value="Other"  {% if form.patient_gender.value == 'Other'  %}selected{% endif %}>&#9954; Other</option>
+                                </select>
+                            </div>
+                            {% if form.patient_gender.errors %}<p style="color:#f87171;font-size:.75rem;margin-top:4px;">{{ form.patient_gender.errors|join:", " }}</p>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="sec-div"><i class="fas fa-circle-dot"></i> Clinical Notes</div>
+                    <div class="field-group">
+                        <label class="field-label">Symptoms / Referral Reason</label>
+                        <textarea name="clinical_notes" class="field-input" placeholder="Optional: presenting symptoms, clinical history, referral reason…">{{ form.clinical_notes.value|default:'' }}</textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <i class="fas fa-brain"></i> Analyse X-Ray &amp; Generate Report
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Floating particles
+const upts=document.getElementById('upts');
+for(let i=0;i<14;i++){
+    const d=document.createElement('div');
+    d.className='upt';
+    const sz=Math.random()*5+2;
+    d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;animation-duration:${Math.random()*20+12}s;animation-delay:-${Math.random()*20}s;background:rgba(14,165,233,${(Math.random()*.12+.03).toFixed(2)});`;
+    upts.appendChild(d);
+}
+
+// File upload / drag-drop / preview
+const fi=document.querySelector('input[type="file"]'),
+      dz=document.getElementById('dropZone'),
+      pb=document.getElementById('prevBox'),
+      pi=document.getElementById('prevImg'),
+      pn=document.getElementById('prevName'),
+      cb=document.getElementById('clearBtn'),
+      di=document.getElementById('dropIco'),
+      dt=document.getElementById('dropTitle'),
+      ds=document.getElementById('dropSub');
+
+function showFile(f){
+    const r=new FileReader();
+    r.onload=e=>{
+        pi.src=e.target.result;
+        pn.textContent=f.name;
+        pb.style.display='block';
+        dz.classList.add('has-file');
+        di.className='fas fa-circle-check';
+        dt.textContent='X-Ray ready';
+        ds.textContent=f.name;
+    };
+    r.readAsDataURL(f);
+}
+
+function clearFile(){
+    fi.value='';
+    pb.style.display='none';
+    pi.src='';
+    dz.classList.remove('has-file');
+    di.className='fas fa-cloud-arrow-up';
+    dt.textContent='Drop X-Ray here';
+    ds.textContent='JPG, PNG, DICOM · Max 10MB';
+}
+
+fi.addEventListener('change',function(){if(this.files[0])showFile(this.files[0]);});
+cb.addEventListener('click',clearFile);
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{
+    e.preventDefault();
+    dz.classList.remove('drag');
+    if(e.dataTransfer.files[0]){fi.files=e.dataTransfer.files;showFile(e.dataTransfer.files[0]);}
+});
+
+// Submit loading state
+document.getElementById('upForm').addEventListener('submit',()=>{
+    const b=document.getElementById('submitBtn');
+    b.classList.add('loading');
+    b.innerHTML='<i class="fas fa-spinner fa-spin"></i> Analysing…';
+});
+</script>
+{% endblock %}

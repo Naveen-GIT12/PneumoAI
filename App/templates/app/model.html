@@ -1,0 +1,333 @@
+{% extends "users/base.html" %}
+{% block title %}AI Detection — Upload X-Ray{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+    --sky:#0ea5e9;--sky2:#38bdf8;--sky3:#7dd3fc;--skyd:#0284c7;
+    --org:#f97316;--em:#06b6d4;--grn:#10b981;
+    --c0:#03080f;--c1:#060e1c;--c2:#0a1628;
+    --bd:rgba(14,165,233,0.12);--bd2:rgba(14,165,233,0.25);
+    --mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;--tx2:#8fb8d8;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+
+.up-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(ellipse 70% 55% at 12% 35%,rgba(14,165,233,0.09) 0%,transparent 55%),
+               radial-gradient(ellipse 55% 45% at 92% 72%,rgba(249,115,22,0.06) 0%,transparent 55%),
+               var(--c0);}
+.up-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(14,165,233,0.028) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(14,165,233,0.028) 1px,transparent 1px);
+    background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+.up-pts{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.upt{position:absolute;border-radius:50%;animation:ptFloat linear infinite;}
+@keyframes ptFloat{0%{transform:translateY(110vh);opacity:0;}8%{opacity:1;}92%{opacity:0.55;}100%{transform:translateY(-5vh);opacity:0;}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes beamDown{0%{top:0;opacity:0;}4%{opacity:1;}96%{opacity:1;}100%{top:100%;opacity:0;}}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes gradFlow{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(14,165,233,0.7);}70%{box-shadow:0 0 0 10px rgba(14,165,233,0);}100%{box-shadow:0 0 0 0 rgba(14,165,233,0);}}
+@keyframes orbSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes pulseFade{0%{transform:scale(1);opacity:0.5;}100%{transform:scale(2.5);opacity:0;}}
+@keyframes scanReveal{from{opacity:0;transform:scale(0.96) translateY(16px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+
+.up-page{position:relative;z-index:1;min-height:calc(100vh - 70px);display:flex;align-items:center;justify-content:center;padding:44px 24px;font-family:'Plus Jakarta Sans',sans-serif;}
+.up-wrap{width:100%;max-width:760px;}
+
+/* ── HEADER ── */
+.up-hdr{text-align:center;margin-bottom:36px;animation:fadeUp 0.8s ease both;}
+.up-orbital{position:relative;width:100px;height:100px;margin:0 auto 24px;}
+.orb-ring{position:absolute;border-radius:50%;border-style:solid;border-color:transparent;animation:orbSpin linear infinite;}
+.or1{inset:0;border-width:1px;border-top-color:rgba(14,165,233,0.5);border-right-color:rgba(14,165,233,0.18);animation-duration:9s;}
+.or2{inset:13px;border-width:1px;border-bottom-color:rgba(249,115,22,0.32);animation-duration:14s;animation-direction:reverse;}
+.or3{inset:26px;border-width:1px;border-top-color:rgba(6,182,212,0.2);animation-duration:20s;}
+.odot{position:absolute;border-radius:50%;top:-4.5px;left:calc(50% - 4.5px);width:9px;height:9px;}
+.odot-sky{background:var(--sky);box-shadow:0 0 12px rgba(14,165,233,1);}
+.odot-org{background:var(--org);box-shadow:0 0 10px rgba(249,115,22,0.9);width:7px;height:7px;top:-3.5px;left:calc(50% - 3.5px);}
+.orb-core{position:absolute;inset:28px;border-radius:50%;background:radial-gradient(circle at 38% 36%,rgba(14,165,233,0.22),rgba(14,165,233,0.04));border:1px solid rgba(14,165,233,0.3);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--sky);animation:coreB 2.8s ease-in-out infinite;}
+@keyframes coreB{0%,100%{box-shadow:0 0 0 0 rgba(14,165,233,0.25);}50%{box-shadow:0 0 0 14px rgba(14,165,233,0);}}
+
+.up-eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
+.up-eyebrow::before,.up-eyebrow::after{content:'';width:28px;height:1px;background:var(--bd);}
+.edot{width:7px;height:7px;border-radius:50%;background:var(--sky);animation:ripple 2s ease-out infinite;}
+.up-title{font-family:'Outfit',sans-serif;font-size:2.2rem;font-weight:800;color:white;letter-spacing:-0.02em;margin-bottom:8px;}
+.up-title span{background:linear-gradient(110deg,var(--sky2),var(--em));background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradFlow 4s ease infinite;}
+.up-sub{color:var(--mu2);font-size:0.9rem;font-weight:300;line-height:1.7;}
+
+/* ── MAIN CARD ── */
+.up-card{position:relative;overflow:hidden;background:rgba(8,16,30,0.88);border:1px solid var(--bd);border-radius:24px;backdrop-filter:blur(20px);box-shadow:0 30px 80px rgba(0,0,0,0.4);animation:fadeUp 0.8s 0.1s ease both;}
+/* scan beam on card */
+.card-beam{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,165,233,0.55),transparent);animation:beamDown 5s ease-in-out infinite;pointer-events:none;z-index:1;}
+/* corner brackets */
+.ck{position:absolute;width:24px;height:24px;opacity:0.38;z-index:2;}
+.ck.tl{top:14px;left:14px;border-top:2px solid var(--sky);border-left:2px solid var(--sky);}
+.ck.tr{top:14px;right:14px;border-top:2px solid var(--sky);border-right:2px solid var(--sky);}
+.ck.bl{bottom:14px;left:14px;border-bottom:2px solid var(--sky);border-left:2px solid var(--sky);}
+.ck.br{bottom:14px;right:14px;border-bottom:2px solid var(--sky);border-right:2px solid var(--sky);}
+.up-card-inner{padding:36px;}
+
+/* ── STEP INDICATORS ── */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:32px;position:relative;z-index:2;}
+.step{display:flex;align-items:center;gap:10px;flex:1;}
+.step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:700;flex-shrink:0;transition:all 0.3s;}
+.step-num.active{background:var(--sky);color:white;box-shadow:0 0 0 6px rgba(14,165,233,0.15);}
+.step-num.done{background:var(--grn);color:white;}
+.step-num.idle{background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);color:var(--mu);}
+.step-info{flex:1;}
+.step-lbl{font-family:'JetBrains Mono',monospace;font-size:0.6rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--mu);margin-bottom:1px;}
+.step-desc{font-size:0.8rem;font-weight:500;color:var(--tx2);}
+.step-line{width:28px;height:1px;background:var(--bd);flex-shrink:0;}
+
+/* ── DROP ZONE ── */
+.drop-zone{position:relative;border:2px dashed rgba(14,165,233,0.22);border-radius:18px;padding:56px 32px;text-align:center;cursor:pointer;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);background:rgba(14,165,233,0.02);margin-bottom:24px;overflow:hidden;}
+.drop-zone:hover,.drop-zone.drag{border-color:rgba(14,165,233,0.55);background:rgba(14,165,233,0.05);transform:scale(1.01);}
+.drop-zone.has-file{border-style:solid;border-color:rgba(16,185,129,0.45);background:rgba(16,185,129,0.025);}
+.drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+/* pulse rings */
+.dp-ring{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid rgba(14,165,233,0.12);animation:pulseFade 3s ease-out infinite;transform:translate(-50%,-50%);pointer-events:none;}
+.dp-ring:nth-child(1){width:120px;height:120px;animation-delay:0s;}
+.dp-ring:nth-child(2){width:170px;height:170px;animation-delay:0.9s;}
+.dp-ring:nth-child(3){width:220px;height:220px;animation-delay:1.8s;}
+/* drop icon box */
+.drop-ico-box{position:relative;z-index:2;width:72px;height:72px;margin:0 auto 20px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.18);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;color:var(--sky);transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);animation:floatY 4s ease-in-out infinite;}
+.drop-zone:hover .drop-ico-box,.drop-zone.drag .drop-ico-box{background:rgba(14,165,233,0.16);border-color:rgba(14,165,233,0.4);transform:scale(1.1) translateY(-4px);box-shadow:0 12px 32px rgba(14,165,233,0.25);}
+.drop-zone.has-file .drop-ico-box{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.35);color:var(--grn);animation:none;}
+.drop-title{position:relative;z-index:2;font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:700;color:white;margin-bottom:6px;}
+.drop-sub{position:relative;z-index:2;font-size:0.82rem;color:var(--mu);margin-bottom:16px;}
+.drop-badge{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;padding:7px 16px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;font-size:0.78rem;font-weight:600;color:var(--sky2);pointer-events:none;transition:all 0.3s;}
+.drop-zone:hover .drop-badge,.drop-zone.drag .drop-badge{background:rgba(14,165,233,0.16);border-color:rgba(14,165,233,0.35);}
+
+/* ── PREVIEW ── */
+.preview-box{display:none;margin-bottom:24px;border-radius:16px;overflow:hidden;border:1px solid rgba(14,165,233,0.18);animation:scanReveal 0.45s ease both;}
+.preview-img-wrap{position:relative;background:#000;max-height:360px;overflow:hidden;}
+.preview-img-wrap img{width:100%;max-height:360px;object-fit:contain;display:block;transition:transform 0.5s;}
+.preview-img-wrap:hover img{transform:scale(1.02);}
+/* scan line on preview */
+.prev-scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(14,165,233,0.8),transparent);animation:beamDown 2.5s ease-in-out infinite;pointer-events:none;z-index:2;}
+/* HUD on preview */
+.prev-hud{position:absolute;top:10px;right:10px;z-index:3;font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:rgba(14,165,233,0.75);background:rgba(3,8,15,0.7);backdrop-filter:blur(8px);border:1px solid rgba(14,165,233,0.15);border-radius:6px;padding:5px 9px;line-height:1.6;}
+/* corner brackets on preview */
+.pc{position:absolute;width:16px;height:16px;z-index:3;opacity:0.55;}
+.pc.tl{top:8px;left:8px;border-top:1.5px solid var(--sky);border-left:1.5px solid var(--sky);}
+.pc.tr{top:8px;right:8px;border-top:1.5px solid var(--sky);border-right:1.5px solid var(--sky);}
+.pc.bl{bottom:8px;left:8px;border-bottom:1.5px solid var(--sky);border-left:1.5px solid var(--sky);}
+.pc.br{bottom:8px;right:8px;border-bottom:1.5px solid var(--sky);border-right:1.5px solid var(--sky);}
+.preview-footer{padding:12px 16px;background:rgba(14,165,233,0.05);border-top:1px solid rgba(14,165,233,0.12);display:flex;align-items:center;gap:10px;}
+.preview-footer i{color:var(--grn);font-size:0.9rem;}
+.preview-fname{font-size:0.82rem;color:var(--sky3);font-weight:600;flex:1;font-family:'JetBrains Mono',monospace;font-size:0.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prev-clear{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:7px;color:#f87171;font-size:0.76rem;padding:4px 10px;cursor:pointer;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.prev-clear:hover{background:rgba(239,68,68,0.22);color:white;}
+
+/* ── SUBMIT BUTTON ── */
+.submit-btn{width:100%;height:56px;background:linear-gradient(135deg,var(--sky),var(--skyd));border:none;border-radius:14px;color:white;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;position:relative;overflow:hidden;transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.28s;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.02em;box-shadow:0 8px 28px rgba(14,165,233,0.22),inset 0 1px 0 rgba(255,255,255,0.1);}
+.submit-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.15) 50%,transparent 70%);transform:translateX(-100%);transition:transform 0.55s;}
+.submit-btn:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 18px 44px rgba(14,165,233,0.4),inset 0 1px 0 rgba(255,255,255,0.1);}
+.submit-btn:hover::before{transform:translateX(100%);}
+.submit-btn:active{transform:translateY(0);}
+.submit-btn.loading{pointer-events:none;background:linear-gradient(135deg,#0284c7,#075985);}
+
+/* ── FEATURE GRID ── */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;}
+.feat-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(6,14,26,0.7);border:1px solid rgba(14,165,233,0.08);border-radius:12px;transition:all 0.3s;cursor:default;}
+.feat-item:hover{border-color:rgba(14,165,233,0.22);background:rgba(14,165,233,0.04);transform:translateY(-2px);}
+.feat-ico{width:34px;height:34px;border-radius:9px;flex-shrink:0;background:rgba(14,165,233,0.09);display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--sky);transition:transform 0.3s,background 0.3s;}
+.feat-item:hover .feat-ico{transform:scale(1.12) rotate(-8deg);background:rgba(14,165,233,0.16);}
+.feat-txt{flex:1;}
+.feat-title{font-size:0.84rem;font-weight:600;color:var(--tx);margin-bottom:3px;}
+.feat-desc{font-size:0.75rem;color:var(--mu);line-height:1.5;font-weight:300;}
+
+/* ── SUPPORTED FORMATS ── */
+.formats-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;flex-wrap:wrap;}
+.fmt-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.12);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.62rem;font-weight:600;color:var(--mu2);letter-spacing:0.05em;}
+.fmt-badge i{color:var(--sky);font-size:0.58rem;}
+.fmt-sep{color:var(--mu);font-size:0.7rem;}
+
+@media(max-width:600px){
+    .up-page{padding:24px 14px;}
+    .feat-grid{grid-template-columns:1fr;}
+    .steps{flex-direction:column;align-items:flex-start;gap:12px;}
+    .step-line{display:none;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="up-bg"></div><div class="up-mesh"></div><div class="up-pts" id="upts"></div>
+
+<div class="up-page">
+<div class="up-wrap">
+
+    <!-- HEADER -->
+    <div class="up-hdr">
+        <div class="up-orbital">
+            <div class="orb-ring or1"><div class="odot odot-sky"></div></div>
+            <div class="orb-ring or2"><div class="odot odot-org"></div></div>
+            <div class="orb-ring or3"></div>
+            <div class="orb-core"><i class="fas fa-x-ray"></i></div>
+        </div>
+        <div class="up-eyebrow"><div class="edot"></div> AI-Powered Analysis <div class="edot"></div></div>
+        <h1 class="up-title">Chest X-Ray <span>Detection</span></h1>
+        <p class="up-sub">Upload a chest X-ray for instant AI-powered pneumonia classification and diagnostic report generation</p>
+    </div>
+
+    <!-- CARD -->
+    <div class="up-card">
+        <div class="card-beam"></div>
+        <div class="ck tl"></div><div class="ck tr"></div><div class="ck bl"></div><div class="ck br"></div>
+        <div class="up-card-inner">
+
+            <!-- STEP INDICATORS -->
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num active" id="step1n">01</div>
+                    <div class="step-info"><div class="step-lbl">Step 1</div><div class="step-desc">Upload X-Ray</div></div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-num idle" id="step2n">02</div>
+                    <div class="step-info"><div class="step-lbl">Step 2</div><div class="step-desc">AI Analysis</div></div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-num idle" id="step3n">03</div>
+                    <div class="step-info"><div class="step-lbl">Step 3</div><div class="step-desc">View Report</div></div>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" id="upForm">
+                {% csrf_token %}
+
+                <!-- DROP ZONE -->
+                <div class="drop-zone" id="dropZone">
+                    <div class="dp-ring"></div><div class="dp-ring"></div><div class="dp-ring"></div>
+                    {{ form.image }}
+                    <div class="drop-ico-box"><i class="fas fa-cloud-arrow-up" id="dropIco"></i></div>
+                    <div class="drop-title" id="dropTitle">Drop your X-ray here</div>
+                    <div class="drop-sub" id="dropSub">Drag & drop or click to select from your device</div>
+                    <div class="drop-badge"><i class="fas fa-folder-open"></i> Browse Files</div>
+                </div>
+
+                <!-- PREVIEW -->
+                <div class="preview-box" id="prevBox">
+                    <div class="preview-img-wrap">
+                        <div class="prev-scan"></div>
+                        <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+                        <div class="prev-hud" id="prevHud">LOADING...</div>
+                        <img id="prevImg" src="" alt="Preview">
+                    </div>
+                    <div class="preview-footer">
+                        <i class="fas fa-circle-check"></i>
+                        <span class="preview-fname" id="prevName">file.jpg</span>
+                        <button type="button" class="prev-clear" id="clearBtn"><i class="fas fa-xmark"></i> Remove</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="fas fa-brain" id="submitIco"></i>
+                    <span id="submitTxt">Analyse with AI</span>
+                </button>
+            </form>
+
+            <!-- SUPPORTED FORMATS -->
+            <div class="formats-row">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--mu);letter-spacing:0.06em;text-transform:uppercase;">Supported:</span>
+                <div class="fmt-badge"><i class="fas fa-file-image"></i> JPG</div>
+                <div class="fmt-badge"><i class="fas fa-file-image"></i> PNG</div>
+                <div class="fmt-badge"><i class="fas fa-file-medical"></i> DICOM</div>
+                <div class="fmt-badge"><i class="fas fa-file-image"></i> WEBP</div>
+                <div class="fmt-badge"><i class="fas fa-scale-balanced"></i> MAX 10MB</div>
+            </div>
+
+            <!-- FEATURES -->
+            <div class="feat-grid">
+                <div class="feat-item">
+                    <div class="feat-ico"><i class="fas fa-lightbulb"></i></div>
+                    <div class="feat-txt"><div class="feat-title">Frontal View Best</div><div class="feat-desc">PA (posteroanterior) chest views provide optimal accuracy for AI classification</div></div>
+                </div>
+                <div class="feat-item">
+                    <div class="feat-ico"><i class="fas fa-expand"></i></div>
+                    <div class="feat-txt"><div class="feat-title">High Resolution</div><div class="feat-desc">Images ≥1024×1024 pixels yield significantly better classification results</div></div>
+                </div>
+                <div class="feat-item">
+                    <div class="feat-ico"><i class="fas fa-bolt"></i></div>
+                    <div class="feat-txt"><div class="feat-title">Under 3 Seconds</div><div class="feat-desc">Deep learning inference completes in under 3 seconds with Grad-CAM heatmap</div></div>
+                </div>
+                <div class="feat-item">
+                    <div class="feat-ico"><i class="fas fa-shield-halved"></i></div>
+                    <div class="feat-txt"><div class="feat-title">Secure Processing</div><div class="feat-desc">Images processed locally on-server. Never shared with third parties</div></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// particles
+const upts=document.getElementById('upts');
+for(let i=0;i<18;i++){const d=document.createElement('div');d.className='upt';const sz=Math.random()*5+2;const blue=Math.random()>0.4;d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;animation-duration:${Math.random()*20+12}s;animation-delay:-${Math.random()*20}s;background:${blue?`rgba(14,165,233,${(Math.random()*0.15+0.03).toFixed(2)})`:`rgba(249,115,22,${(Math.random()*0.1+0.02).toFixed(2)})`};`;upts.appendChild(d);}
+
+const fi=document.querySelector('input[type="file"]');
+const dz=document.getElementById('dropZone');
+const pb=document.getElementById('prevBox');
+const pi=document.getElementById('prevImg');
+const pn=document.getElementById('prevName');
+const ph=document.getElementById('prevHud');
+const sb=document.getElementById('submitBtn');
+const di=document.getElementById('dropIco');
+const dt=document.getElementById('dropTitle');
+const ds=document.getElementById('dropSub');
+const cb=document.getElementById('clearBtn');
+const s1=document.getElementById('step1n');
+const s2=document.getElementById('step2n');
+
+function showFile(file){
+    const r=new FileReader();
+    r.onload=e=>{
+        pi.src=e.target.result;
+        pn.textContent=file.name;
+        ph.textContent=`FILE: ${file.name}\nSIZE: ${(file.size/1024).toFixed(0)}KB\nSTATUS: READY`;
+        pb.style.display='block';
+        dz.classList.add('has-file');
+        di.className='fas fa-circle-check';
+        dt.textContent='X-Ray ready for analysis';
+        ds.textContent=file.name;
+        s1.classList.remove('active'); s1.classList.add('done'); s1.innerHTML='<i class="fas fa-check" style="font-size:0.7rem;"></i>';
+        s2.classList.remove('idle'); s2.classList.add('active');
+    };
+    r.readAsDataURL(file);
+}
+
+function clearFile(){
+    fi.value='';
+    pb.style.display='none';
+    pi.src='';
+    dz.classList.remove('has-file');
+    di.className='fas fa-cloud-arrow-up';
+    dt.textContent='Drop your X-ray here';
+    ds.textContent='Drag & drop or click to select from your device';
+    s1.className='step-num active'; s1.innerHTML='01';
+    s2.className='step-num idle'; s2.innerHTML='02';
+}
+
+fi.addEventListener('change',function(){if(this.files[0]) showFile(this.files[0]);});
+cb.addEventListener('click',clearFile);
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0]){fi.files=e.dataTransfer.files;showFile(e.dataTransfer.files[0]);}});
+
+document.getElementById('upForm').addEventListener('submit',()=>{
+    sb.classList.add('loading');
+    sb.innerHTML='<i class="fas fa-spinner fa-spin"></i> <span>Analysing X-Ray…</span>';
+    document.getElementById('step2n').innerHTML='<i class="fas fa-spinner fa-spin" style="font-size:0.7rem;"></i>';
+});
+</script>
+{% endblock %}

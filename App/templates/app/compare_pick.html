@@ -1,0 +1,197 @@
+{% extends "users/base.html" %}
+{% block title %}Compare Scans — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+space grotesk+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--skyd:#0284c7;--org:#f97316;--grn:#10b981;--pur:#8b5cf6;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 95% 75%,rgba(139,92,246,.06) 0%,transparent 55%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes gradFlow{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+
+.cp-page{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Space Grotesk',sans-serif;}
+.cp-hdr{text-align:center;margin-bottom:32px;animation:fadeUp .7s ease both;}
+.cp-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);margin-bottom:10px;}
+.cp-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;margin-bottom:6px;}
+.cp-title span{background:linear-gradient(110deg,var(--sky2),#a78bfa);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradFlow 4s ease infinite;}
+.cp-sub{color:var(--mu2);font-size:.88rem;}
+
+.steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:32px;animation:fadeUp .7s .06s ease both;}
+.step{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;letter-spacing:.06em;}
+.step-active{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;}
+.step-next{background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.1);color:var(--mu);}
+.step-line{width:28px;height:1px;background:rgba(14,165,233,.15);}
+
+.sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;animation:fadeUp .7s .1s ease both;}
+@media(max-width:720px){.sel-grid{grid-template-columns:1fr;}}
+
+.sel-panel{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:20px;overflow:hidden;backdrop-filter:blur(14px);}
+.sel-panel.p1{border-color:rgba(14,165,233,.22);}
+.sel-panel.p2{border-color:rgba(139,92,246,.22);}
+.sel-head{padding:14px 18px;border-bottom:1px solid rgba(14,165,233,.08);display:flex;align-items:center;gap:10px;}
+.sel-num{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:800;flex-shrink:0;}
+.n1{background:rgba(14,165,233,.15);color:var(--sky);}
+.n2{background:rgba(139,92,246,.15);color:#a78bfa;}
+.sel-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2);}
+.sel-ok{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--grn);display:none;}
+
+.scan-list{max-height:400px;overflow-y:auto;padding:8px;}
+.scan-list::-webkit-scrollbar{width:4px;}
+.scan-list::-webkit-scrollbar-thumb{background:rgba(14,165,233,.18);border-radius:2px;}
+
+.scan-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:all .2s;margin-bottom:4px;}
+.scan-item:hover{background:rgba(14,165,233,.04);border-color:rgba(14,165,233,.12);}
+.scan-item.sel1{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.3);}
+.scan-item.sel2{background:rgba(139,92,246,.08);border-color:rgba(139,92,246,.3);}
+
+.si-img{width:42px;height:42px;border-radius:7px;object-fit:cover;border:1px solid rgba(14,165,233,.15);background:#000;flex-shrink:0;}
+.si-img-ph{width:42px;height:42px;border-radius:7px;background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;color:var(--mu);flex-shrink:0;}
+.si-info{flex:1;min-width:0;}
+.si-name{font-weight:600;color:#fff;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.si-meta{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--mu);margin-top:2px;}
+.si-pct{flex-shrink:0;padding:2px 7px;border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;}
+.si-check{width:20px;height:20px;border-radius:6px;border:1px solid rgba(14,165,233,.18);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:transparent;flex-shrink:0;transition:all .2s;}
+.scan-item.sel1 .si-check{background:var(--sky);border-color:var(--sky);color:#fff;}
+.scan-item.sel2 .si-check{background:#8b5cf6;border-color:#8b5cf6;color:#fff;}
+
+.c-covid{background:rgba(239,68,68,.12);color:#f87171;}
+.c-normal{background:rgba(16,185,129,.12);color:#34d399;}
+.c-bacterial{background:rgba(249,115,22,.12);color:#fb923c;}
+.c-viral{background:rgba(14,165,233,.12);color:var(--sky2);}
+.c-opacity{background:rgba(139,92,246,.12);color:#a78bfa;}
+
+.si-empty{text-align:center;padding:30px 12px;color:var(--mu);font-size:.82rem;}
+
+.cp-action{text-align:center;animation:fadeUp .7s .18s ease both;}
+.cp-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 36px;background:linear-gradient(135deg,var(--sky),#8b5cf6);border:none;border-radius:14px;color:#fff;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .25s,box-shadow .25s;text-decoration:none;}
+.cp-btn:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(14,165,233,.3);color:#fff;text-decoration:none;}
+.cp-btn.disabled{opacity:.38;pointer-events:none;background:linear-gradient(135deg,#1e293b,#1e293b);}
+.cp-hint{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--mu);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div>
+<div class="rp-mesh"></div>
+
+<div class="cp-page">
+
+    <div class="cp-hdr">
+        <div class="cp-eyebrow"><i class="fas fa-code-compare"></i> Comparison Tool</div>
+        <h1 class="cp-title">Compare <span>Two Scans</span></h1>
+        <p class="cp-sub">Pick one scan from each panel — then click Compare to see a side-by-side clinical analysis</p>
+    </div>
+
+    <div class="steps">
+        <div class="step step-active"><i class="fas fa-hand-pointer"></i> SELECT SCANS</div>
+        <div class="step-line"></div>
+        <div class="step step-next"><i class="fas fa-code-compare"></i> COMPARE</div>
+        <div class="step-line"></div>
+        <div class="step step-next"><i class="fas fa-chart-line"></i> ANALYSIS</div>
+    </div>
+
+    <div class="sel-grid">
+
+        <!-- Panel 1 -->
+        <div class="sel-panel p1">
+            <div class="sel-head">
+                <div class="sel-num n1">1</div>
+                <span class="sel-lbl">Baseline / Earlier Scan</span>
+                <span class="sel-ok" id="ok1"><i class="fas fa-circle-check"></i> Selected</span>
+            </div>
+            <div class="scan-list">
+                {% if records %}
+                    {% for r in records %}
+                    <div class="scan-item" data-pk="{{ r.pk }}" onclick="pick(this,1)">
+                        {% if r.image %}<img class="si-img" src="{{ r.image.url }}" alt="">
+                        {% else %}<div class="si-img-ph"><i class="fas fa-image"></i></div>{% endif %}
+                        <div class="si-info">
+                            <div class="si-name">{% if r.patient_name %}{{ r.patient_name }} — {% endif %}{{ r.predicted_label }}</div>
+                            <div class="si-meta">{{ r.created_at|date:"d M Y · H:i" }}{% if r.severity %} · {{ r.severity }}{% endif %}</div>
+                        </div>
+                        <span class="si-pct
+                            {% if r.predicted_class == 'COVID_19' %}c-covid
+                            {% elif r.predicted_class == 'normal' %}c-normal
+                            {% elif r.predicted_class == 'Pneumonia_Bacterial' %}c-bacterial
+                            {% elif r.predicted_class == 'Pneumonia_Viral' %}c-viral
+                            {% else %}c-opacity{% endif %}">{{ r.confidence|floatformat:0 }}%</span>
+                        <div class="si-check"><i class="fas fa-check"></i></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="si-empty"><i class="fas fa-folder-open" style="font-size:1.4rem;display:block;margin-bottom:8px;"></i>No scans yet</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Panel 2 -->
+        <div class="sel-panel p2">
+            <div class="sel-head">
+                <div class="sel-num n2">2</div>
+                <span class="sel-lbl">Follow-up / Later Scan</span>
+                <span class="sel-ok" id="ok2"><i class="fas fa-circle-check"></i> Selected</span>
+            </div>
+            <div class="scan-list">
+                {% if records %}
+                    {% for r in records %}
+                    <div class="scan-item" data-pk="{{ r.pk }}" onclick="pick(this,2)">
+                        {% if r.image %}<img class="si-img" src="{{ r.image.url }}" alt="">
+                        {% else %}<div class="si-img-ph"><i class="fas fa-image"></i></div>{% endif %}
+                        <div class="si-info">
+                            <div class="si-name">{% if r.patient_name %}{{ r.patient_name }} — {% endif %}{{ r.predicted_label }}</div>
+                            <div class="si-meta">{{ r.created_at|date:"d M Y · H:i" }}{% if r.severity %} · {{ r.severity }}{% endif %}</div>
+                        </div>
+                        <span class="si-pct
+                            {% if r.predicted_class == 'COVID_19' %}c-covid
+                            {% elif r.predicted_class == 'normal' %}c-normal
+                            {% elif r.predicted_class == 'Pneumonia_Bacterial' %}c-bacterial
+                            {% elif r.predicted_class == 'Pneumonia_Viral' %}c-viral
+                            {% else %}c-opacity{% endif %}">{{ r.confidence|floatformat:0 }}%</span>
+                        <div class="si-check"><i class="fas fa-check"></i></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="si-empty"><i class="fas fa-folder-open" style="font-size:1.4rem;display:block;margin-bottom:8px;"></i>No scans yet</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="cp-action">
+        <a href="#" class="cp-btn disabled" id="cpBtn">
+            <i class="fas fa-code-compare"></i> Compare Selected Scans
+        </a>
+        <div class="cp-hint" id="cpHint">Select one scan from each panel to continue</div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let s1=null, s2=null;
+function pick(el, slot){
+    const pk=el.dataset.pk;
+    if(slot===1 && pk===s2) return;
+    if(slot===2 && pk===s1) return;
+    const cls=slot===1?'sel1':'sel2';
+    document.querySelectorAll('.scan-item.'+cls).forEach(i=>i.classList.remove(cls));
+    el.classList.add(cls);
+    if(slot===1){s1=pk;document.getElementById('ok1').style.display='';}
+    else        {s2=pk;document.getElementById('ok2').style.display='';}
+    const btn=document.getElementById('cpBtn'),hint=document.getElementById('cpHint');
+    if(s1&&s2){
+        btn.href='?scan1='+s1+'&scan2='+s2;
+        btn.classList.remove('disabled');
+        hint.textContent='Both scans selected — click to compare';
+        hint.style.color='#34d399';
+    } else {
+        btn.href='#';btn.classList.add('disabled');
+        hint.textContent='Select a scan from '+((!s1&&!s2)?'both panels':(!s1?'panel 1':'panel 2'))+' to continue';
+        hint.style.color='';
+    }
+}
+</script>
+{% endblock %}

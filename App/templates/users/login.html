@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <title>Sign In — PneumoAI</title>
+  <style>
+    :root {
+      --sky:    #0ea5e9;
+      --sky2:   #38bdf8;
+      --orange: #f97316;
+      --dark:   #060d1a;
+      --panel:  #0c1629;
+      --card:   #111e35;
+      --border: rgba(14,165,233,0.13);
+      --muted:  #4a637d;
+      --text:   #cfe4f5;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body { height:100%; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ════════════════════════════════
+       BACKGROUND CANVAS
+    ════════════════════════════════ */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 90% 70% at -10% 50%, rgba(14,165,233,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 110% 60%, rgba(249,115,22,0.08) 0%, transparent 50%),
+        var(--dark);
+    }
+
+    /* grid mesh */
+    .mesh {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(14,165,233,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,165,233,0.045) 1px, transparent 1px);
+      background-size: 55px 55px;
+      animation: meshDrift 30s linear infinite;
+    }
+    @keyframes meshDrift {
+      0%   { background-position: 0 0; }
+      100% { background-position: 55px 55px; }
+    }
+
+    /* animated aurora blob */
+    .aurora {
+      position: fixed; z-index: 0;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14,165,233,0.07) 0%, transparent 70%);
+      animation: auroraMove 12s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    .aurora-1 { top: -100px; left: -100px; animation-delay: 0s; }
+    .aurora-2 { bottom: -100px; right: -100px; background: radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%); animation-delay: -6s; }
+    @keyframes auroraMove {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(60px, 40px) scale(1.2); }
+    }
+
+    /* particles */
+    .particles { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .pt {
+      position: absolute; border-radius: 50%;
+      animation: ptRise linear infinite;
+    }
+    @keyframes ptRise {
+      0%   { transform: translateY(110vh) scale(0.2); opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 0.7; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+
+    /* ════════════════════════════════
+       LAYOUT
+    ════════════════════════════════ */
+    .page {
+      position: relative; z-index: 1;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    /* ════════════════════════════════
+       LEFT — VISUAL PANEL
+    ════════════════════════════════ */
+    .left {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 48px;
+      border-right: 1px solid var(--border);
+      position: relative; overflow: hidden;
+      animation: revealLeft 0.9s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes revealLeft {
+      from { opacity:0; transform: translateX(-70px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+
+    /* scanning beam */
+    .scan-beam {
+      position: absolute; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(14,165,233,0.7) 50%, transparent 100%);
+      animation: beamScan 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes beamScan {
+      0%   { top: -2px; opacity: 0; }
+      5%   { opacity: 1; }
+      95%  { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* corner decorations */
+    .corner {
+      position: absolute; width: 40px; height: 40px;
+      opacity: 0.4;
+    }
+    .corner-tl { top: 20px; left: 20px; border-top: 2px solid var(--sky); border-left: 2px solid var(--sky); }
+    .corner-tr { top: 20px; right: 20px; border-top: 2px solid var(--sky); border-right: 2px solid var(--sky); }
+    .corner-bl { bottom: 20px; left: 20px; border-bottom: 2px solid var(--sky); border-left: 2px solid var(--sky); }
+    .corner-br { bottom: 20px; right: 20px; border-bottom: 2px solid var(--sky); border-right: 2px solid var(--sky); }
+
+    /* brand */
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 52px;
+    }
+    .brand-logo {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--sky), #0369a1);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: white;
+      box-shadow: 0 0 0 0 rgba(14,165,233,0.5);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.5), 0 8px 24px rgba(14,165,233,0.25); }
+      50%      { box-shadow: 0 0 0 10px rgba(14,165,233,0), 0 8px 32px rgba(14,165,233,0.5); }
+    }
+    .brand-txt {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem; color: white; letter-spacing: 0.5px;
+    }
+    .brand-txt em { color: var(--sky); font-style: normal; }
+
+    /* ── ORBITAL LUNG ANIMATION ── */
+    .orbit-wrap {
+      position: relative; width: 280px; height: 280px;
+      margin-bottom: 44px;
+    }
+
+    .orbit {
+      position: absolute; border-radius: 50%;
+      border-style: solid; border-color: transparent;
+      animation: spin linear infinite;
+    }
+    .orbit-1 {
+      inset: 0;
+      border-width: 1px;
+      border-top-color: rgba(14,165,233,0.5);
+      border-right-color: rgba(14,165,233,0.2);
+      animation-duration: 8s;
+    }
+    .orbit-2 {
+      inset: 22px;
+      border-width: 1px;
+      border-top-color: rgba(249,115,22,0.4);
+      border-left-color: rgba(249,115,22,0.15);
+      animation-duration: 13s;
+      animation-direction: reverse;
+    }
+    .orbit-3 {
+      inset: 44px;
+      border-width: 1px;
+      border-bottom-color: rgba(14,165,233,0.3);
+      animation-duration: 20s;
+    }
+    .orbit-4 {
+      inset: 66px;
+      border-width: 1px;
+      border-right-color: rgba(56,189,248,0.25);
+      animation-duration: 26s;
+      animation-direction: reverse;
+    }
+    @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    /* orbit dots */
+    .odot {
+      position: absolute;
+      width: 9px; height: 9px; border-radius: 50%;
+      top: -4.5px; left: calc(50% - 4.5px);
+    }
+    .odot-sky   { background: var(--sky);  box-shadow: 0 0 12px rgba(14,165,233,0.9); }
+    .odot-org   { background: var(--orange); box-shadow: 0 0 12px rgba(249,115,22,0.9); }
+    .odot-sm    { width:6px; height:6px; top:-3px; left:calc(50% - 3px); }
+
+    /* lung core */
+    .lung-core {
+      position: absolute; inset: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, rgba(14,165,233,0.2), rgba(14,165,233,0.04));
+      border: 1px solid rgba(14,165,233,0.3);
+      display: flex; align-items: center; justify-content: center;
+      animation: corePulse 3s ease-in-out infinite;
+    }
+    @keyframes corePulse {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(14,165,233,0.3); }
+      50%      { transform: scale(1.07); box-shadow: 0 0 0 16px rgba(14,165,233,0); }
+    }
+    .lung-core i { font-size: 3rem; color: var(--sky); }
+
+    /* ── STATS CHIPS ── */
+    .stats-row {
+      display: flex; gap: 14px;
+      animation: fadeUp 1s 0.6s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(20px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .chip {
+      background: rgba(14,165,233,0.07);
+      border: 1px solid rgba(14,165,233,0.15);
+      border-radius: 30px; padding: 7px 14px;
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--sky2);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .chip i { font-size: 0.8rem; }
+    .chip.org {
+      background: rgba(249,115,22,0.07);
+      border-color: rgba(249,115,22,0.15);
+      color: #fb923c;
+    }
+
+    /* ════════════════════════════════
+       RIGHT — FORM PANEL
+    ════════════════════════════════ */
+    .right {
+      display: flex; align-items: center; justify-content: center;
+      padding: 50px 52px;
+      animation: revealRight 0.9s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes revealRight {
+      from { opacity:0; transform: translateX(70px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+
+    .form-box { width: 100%; max-width: 400px; }
+
+    .form-eyebrow {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--sky);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-eyebrow::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .form-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2.1rem; color: white;
+      margin-bottom: 6px; line-height: 1.2;
+    }
+    .form-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 32px; }
+
+    /* ── error / message ── */
+    .msg-box {
+      border-radius: 10px; padding: 11px 15px;
+      font-size: 0.82rem; margin-bottom: 18px;
+      display: flex; align-items: flex-start; gap: 9px;
+      animation: shake 0.35s ease;
+    }
+    .msg-err  { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.22); color: #fca5a5; }
+    .msg-ok   { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.22); color: #86efac; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 30%{transform:translateX(-7px)} 70%{transform:translateX(7px)} }
+
+    /* ── fields ── */
+    .field { margin-bottom: 16px; }
+
+    .flabel {
+      display: block; font-size: 0.71rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted); margin-bottom: 7px;
+    }
+    .req { color: var(--orange); }
+
+    .inp-shell {
+      position: relative;
+      display: flex; align-items: center;
+      height: 50px;
+      background: rgba(12,22,41,0.9);
+      border: 1px solid rgba(14,165,233,0.13);
+      border-radius: 10px; overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+    .inp-shell::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--sky), var(--sky2));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .inp-shell:focus-within {
+      border-color: rgba(14,165,233,0.35);
+      background: rgba(14,165,233,0.04);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.07), inset 0 0 20px rgba(14,165,233,0.02);
+    }
+    .inp-shell:focus-within::after { transform: scaleX(1); }
+
+    .inp-icon {
+      width: 44px; display: flex; align-items: center; justify-content: center;
+      color: rgba(14,165,233,0.3); font-size: 0.88rem;
+      flex-shrink: 0; transition: color 0.25s;
+    }
+    .inp-shell:focus-within .inp-icon { color: var(--sky); }
+
+    .inp-shell input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: 'Outfit', sans-serif;
+      font-size: 0.92rem; padding-right: 12px;
+    }
+    .inp-shell input::placeholder { color: #1e3a5a; }
+
+    .eye-btn {
+      width: 40px; height: 100%; background: none; border: none;
+      color: var(--muted); cursor: pointer; font-size: 0.82rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s;
+    }
+    .eye-btn:hover { color: var(--sky); }
+
+    /* remember */
+    .remember {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 22px; font-size: 0.82rem; color: var(--muted); cursor: pointer;
+    }
+    .remember input { accent-color: var(--sky); width: 15px; height: 15px; }
+
+    /* ── SUBMIT ── */
+    .btn-submit {
+      width: 100%; height: 52px;
+      background: linear-gradient(135deg, var(--sky) 0%, #0369a1 100%);
+      border: none; border-radius: 10px;
+      color: white; font-family: 'Outfit', sans-serif;
+      font-size: 0.97rem; font-weight: 700; letter-spacing: 0.4px;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+    }
+    .btn-submit .shimmer {
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.55s ease;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(14,165,233,0.38); }
+    .btn-submit:hover .shimmer { transform: translateX(100%); }
+    .btn-submit:active { transform: translateY(0); }
+
+    /* ── DIVIDER ── */
+    .split {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 0.76rem; color: var(--muted);
+      margin: 22px 0 18px;
+    }
+    .split::before,.split::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    /* ── ROLE CARDS ── */
+    .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .role-card {
+      text-decoration: none;
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      padding: 14px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(12,22,41,0.7);
+      color: var(--muted);
+      font-size: 0.82rem; font-weight: 600;
+      transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+      position: relative; overflow: hidden;
+    }
+    .role-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .role-card:hover { transform: translateY(-3px); }
+
+    .role-card.patient::before { background: radial-gradient(circle at 50% 0%, rgba(249,115,22,0.12), transparent 70%); }
+    .role-card.patient:hover { border-color: rgba(249,115,22,0.35); color: #fb923c; box-shadow: 0 8px 24px rgba(249,115,22,0.15); }
+    .role-card.patient:hover::before { opacity: 1; }
+    .role-card.patient .rc-icon { background: rgba(249,115,22,0.12); color: #fb923c; }
+
+    .role-card.doctor::before { background: radial-gradient(circle at 50% 0%, rgba(14,165,233,0.12), transparent 70%); }
+    .role-card.doctor:hover { border-color: rgba(14,165,233,0.35); color: var(--sky2); box-shadow: 0 8px 24px rgba(14,165,233,0.15); }
+    .role-card.doctor:hover::before { opacity: 1; }
+    .role-card.doctor .rc-icon { background: rgba(14,165,233,0.1); color: var(--sky); }
+
+    .rc-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; transition: transform 0.25s;
+    }
+    .role-card:hover .rc-icon { transform: scale(1.1) rotate(-5deg); }
+    .rc-label { position: relative; z-index: 1; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
+      .page { grid-template-columns: 1fr; }
+      .left { display: none; }
+      .right { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="mesh"></div>
+<div class="aurora aurora-1"></div>
+<div class="aurora aurora-2"></div>
+<div class="particles" id="pts"></div>
+
+<div class="page">
+
+  <!-- ══════════ LEFT VISUAL ══════════ -->
+  <div class="left">
+    <div class="scan-beam"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <div class="brand">
+      <div class="brand-logo"><i class="fas fa-lungs"></i></div>
+      <span class="brand-txt">Pneumo<em>AI</em></span>
+    </div>
+
+    <!-- Orbital animation -->
+    <div class="orbit-wrap">
+      <div class="orbit orbit-1"><div class="odot odot-sky"></div></div>
+      <div class="orbit orbit-2"><div class="odot odot-org odot-sm"></div></div>
+      <div class="orbit orbit-3"><div class="odot odot-sky odot-sm"></div></div>
+      <div class="orbit orbit-4"></div>
+      <div class="lung-core"><i class="fas fa-lungs"></i></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="chip"><i class="fas fa-brain"></i> 95%+ Accuracy</div>
+      <div class="chip"><i class="fas fa-bolt"></i> &lt;3s Results</div>
+      <div class="chip org"><i class="fas fa-shield-halved"></i> 5 Classes</div>
+    </div>
+  </div>
+
+  <!-- ══════════ RIGHT FORM ══════════ -->
+  <div class="right">
+    <div class="form-box">
+      <div class="form-eyebrow"><i class="fas fa-circle-dot"></i> Secure Access</div>
+      <h1 class="form-title">Welcome<br>Back</h1>
+      <p class="form-sub">Sign in to access the AI detection system</p>
+
+      {% if form.errors %}
+      <div class="msg-box msg-err">
+        <i class="fas fa-circle-exclamation" style="margin-top:2px;flex-shrink:0;"></i>
+        <span>{% for key, value in form.errors.items %}{{ value }}{% endfor %}</span>
+      </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for message in messages %}
+        <div class="msg-box {% if 'success' in message.tags %}msg-ok{% else %}msg-err{% endif %}">
+          <i class="fas {% if 'success' in message.tags %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}" style="margin-top:2px;flex-shrink:0;"></i>
+          <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      <form action="{% url 'login' %}" method="post">
+        {% csrf_token %}
+
+        <div class="field">
+          <label class="flabel">Username <span class="req">*</span></label>
+          <div class="inp-shell">
+            <span class="inp-icon"><i class="fas fa-user"></i></span>
+            <input type="text" name="username" placeholder="Enter your username" required autocomplete="username"/>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="flabel">Password <span class="req">*</span></label>
+          <div class="inp-shell">
+            <span class="inp-icon"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password" placeholder="Enter your password" required autocomplete="current-password" id="pwField"/>
+            <button type="button" class="eye-btn" onclick="toggleEye('pwField',this)" tabindex="-1">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <label class="remember">
+          <input type="checkbox" name="remember_me"/>
+          Keep me signed in
+        </label>
+
+        <button type="submit" class="btn-submit">
+          <div class="shimmer"></div>
+          <i class="fas fa-arrow-right-to-bracket"></i>
+          Sign In
+        </button>
+      </form>
+
+      <div class="split">New here? Register as</div>
+
+      <div class="role-cards">
+        <a href="{% url 'patient-register' %}" class="role-card patient">
+          <div class="rc-icon"><i class="fas fa-user-injured"></i></div>
+          <span class="rc-label">Patient</span>
+        </a>
+        <a href="{% url 'doctor-register' %}" class="role-card doctor">
+          <div class="rc-icon"><i class="fas fa-stethoscope"></i></div>
+          <span class="rc-label">Doctor</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Particles
+  const pts = document.getElementById('pts');
+  for (let i = 0; i < 22; i++) {
+    const d = document.createElement('div');
+    d.className = 'pt';
+    const sz = Math.random() * 5 + 2;
+    const isBlue = Math.random() > 0.35;
+    d.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*18+10}s;
+      animation-delay:-${Math.random()*18}s;
+      background:${isBlue ? `rgba(14,165,233,${(Math.random()*0.2+0.05).toFixed(2)})` : `rgba(249,115,22,${(Math.random()*0.15+0.04).toFixed(2)})`};
+    `;
+    pts.appendChild(d);
+  }
+
+  // ── Password toggle
+  function toggleEye(id, btn) {
+    const inp = document.getElementById(id);
+    const ic  = btn.querySelector('i');
+    if (inp.type === 'password') { inp.type = 'text';     ic.className = 'fas fa-eye-slash'; }
+    else                         { inp.type = 'password'; ic.className = 'fas fa-eye'; }
+  }
+</script>
+
+</body>
+</html>

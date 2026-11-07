@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <title>OTP Verification — PneumoAI</title>
+  <style>
+    :root {
+      --sky:   #0ea5e9;
+      --sky2:  #38bdf8;
+      --skyd:  #0284c7;
+      --org:   #f97316;
+      --dark:  #060d1a;
+      --dark2: #0c1629;
+      --dark3: #111e35;
+      --border: rgba(14,165,233,0.14);
+      --muted: #4a637d;
+      --text:  #cfe4f5;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    /* ── BACKGROUND ── */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 20% 50%, rgba(14,165,233,0.1) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 50% at 85% 30%, rgba(249,115,22,0.07) 0%, transparent 50%),
+        var(--dark);
+    }
+
+    .mesh {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(14,165,233,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,165,233,0.04) 1px, transparent 1px);
+      background-size: 55px 55px;
+      animation: meshDrift 30s linear infinite;
+    }
+    @keyframes meshDrift {
+      0%   { background-position: 0 0; }
+      100% { background-position: 55px 55px; }
+    }
+
+    .aurora {
+      position: fixed; z-index: 0; border-radius: 50%; pointer-events: none;
+      animation: aurDrift 13s ease-in-out infinite alternate;
+    }
+    .aur1 { width:500px; height:500px; top:-150px; left:-100px; background: radial-gradient(circle, rgba(14,165,233,0.08) 0%, transparent 68%); }
+    .aur2 { width:350px; height:350px; bottom:-80px; right:-60px; background: radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 68%); animation-delay:-6s; }
+    @keyframes aurDrift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(50px,35px) scale(1.18); }
+    }
+
+    .pts { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+    .pt  { position:absolute; border-radius:50%; animation: ptRise linear infinite; }
+    @keyframes ptRise {
+      0%   { transform:translateY(110vh); opacity:0; }
+      8%   { opacity:1; }
+      92%  { opacity:0.6; }
+      100% { transform:translateY(-10vh); opacity:0; }
+    }
+
+    /* ── CARD ── */
+    .card {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 440px;
+      background: rgba(10,18,32,0.85);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 40px;
+      backdrop-filter: blur(24px);
+      text-align: center;
+      animation: cardIn 0.8s cubic-bezier(0.16,1,0.3,1) both;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(14,165,233,0.06);
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(40px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* corner brackets */
+    .crn { position:absolute; width:28px; height:28px; opacity:0.4; }
+    .crn-tl { top:14px; left:14px; border-top:2px solid var(--sky); border-left:2px solid var(--sky); }
+    .crn-tr { top:14px; right:14px; border-top:2px solid var(--sky); border-right:2px solid var(--sky); }
+    .crn-bl { bottom:14px; left:14px; border-bottom:2px solid var(--sky); border-left:2px solid var(--sky); }
+    .crn-br { bottom:14px; right:14px; border-bottom:2px solid var(--sky); border-right:2px solid var(--sky); }
+
+    /* scan beam on card */
+    .card-beam {
+      position: absolute; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(14,165,233,0.7), transparent);
+      animation: beamDown 4s ease-in-out infinite;
+      border-radius: 20px; pointer-events: none;
+    }
+    @keyframes beamDown {
+      0%   { top:0; opacity:0; }
+      5%   { opacity:1; }
+      95%  { opacity:1; }
+      100% { top:100%; opacity:0; }
+    }
+
+    /* ── BRAND ── */
+    .brand {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .brand-logo {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--sky), var(--skyd));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: white;
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.5); }
+      50%      { box-shadow: 0 0 0 8px rgba(14,165,233,0); }
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.15rem; color: white;
+    }
+    .brand-name em { color: var(--sky); font-style: normal; }
+
+    /* ── SHIELD ICON ── */
+    .shield-wrap {
+      position: relative;
+      width: 88px; height: 88px;
+      margin: 0 auto 24px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .shield-ring {
+      position: absolute; border-radius: 50%;
+      border-style: solid; border-color: transparent;
+      animation: orbSpin linear infinite;
+    }
+    .sr1 {
+      inset: 0; border-width: 1px;
+      border-top-color: rgba(14,165,233,0.5);
+      border-right-color: rgba(14,165,233,0.2);
+      animation-duration: 8s;
+    }
+    .sr2 {
+      inset: 10px; border-width: 1px;
+      border-bottom-color: rgba(249,115,22,0.35);
+      animation-duration: 13s; animation-direction: reverse;
+    }
+    @keyframes orbSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    .sdot {
+      position: absolute; border-radius: 50%;
+      top: -4px; left: calc(50% - 4px);
+      width: 8px; height: 8px;
+      background: var(--sky); box-shadow: 0 0 10px rgba(14,165,233,1);
+    }
+
+    .shield-core {
+      position: absolute; inset: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 38%, rgba(14,165,233,0.2), rgba(14,165,233,0.04));
+      border: 1px solid rgba(14,165,233,0.3);
+      display: flex; align-items: center; justify-content: center;
+      animation: corePulse 2.5s ease-in-out infinite;
+    }
+    @keyframes corePulse {
+      0%,100% { transform:scale(1); box-shadow:0 0 0 0 rgba(14,165,233,0.3); }
+      50%      { transform:scale(1.08); box-shadow:0 0 0 12px rgba(14,165,233,0); }
+    }
+    .shield-core i { font-size: 1.6rem; color: var(--sky); }
+
+    /* ── HEADER TEXT ── */
+    .eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--sky);
+      margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      animation: fadeUp 0.6s 0.25s ease both;
+    }
+    .eyebrow::before, .eyebrow::after { content:''; width:30px; height:1px; background: var(--border); }
+
+    .card-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.8rem; color: white;
+      margin-bottom: 8px;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .card-sub {
+      font-size: 0.84rem; color: var(--muted);
+      line-height: 1.7; margin-bottom: 26px;
+      animation: fadeUp 0.6s 0.35s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── MESSAGES ── */
+    .msg-box {
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 0.81rem; margin-bottom: 16px;
+      display: flex; align-items: flex-start; gap: 8px;
+      text-align: left;
+      animation: shake 0.35s ease;
+    }
+    .msg-err { background: rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); color:#fca5a5; }
+    .msg-ok  { background: rgba(34,197,94,0.08);  border:1px solid rgba(34,197,94,0.2);  color:#86efac; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+    /* ── OTP INPUT BOXES ── */
+    .otp-boxes {
+      display: flex; justify-content: center; gap: 10px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s 0.4s ease both;
+    }
+
+    .otp-box {
+      width: 52px; height: 58px;
+      background: rgba(6,13,26,0.9);
+      border: 1px solid rgba(14,165,233,0.15);
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--sky2); text-align: center;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s, transform 0.2s;
+      caret-color: var(--sky);
+    }
+    .otp-box::placeholder { color: rgba(14,165,233,0.15); font-size: 1.2rem; }
+    .otp-box:focus {
+      border-color: rgba(14,165,233,0.5);
+      background: rgba(14,165,233,0.05);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+      transform: translateY(-3px);
+    }
+    .otp-box.filled {
+      border-color: rgba(14,165,233,0.4);
+      background: rgba(14,165,233,0.07);
+    }
+    .otp-box.success {
+      border-color: rgba(34,197,94,0.5) !important;
+      background: rgba(34,197,94,0.07) !important;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.1) !important;
+      color: #4ade80 !important;
+      animation: boxSuccess 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes boxSuccess {
+      from { transform: scale(0.85) translateY(-3px); }
+      to   { transform: scale(1) translateY(-3px); }
+    }
+
+    /* hidden real input (fallback) */
+    .otp-hidden { display: none; }
+
+    /* ── TIMER ── */
+    .timer-wrap {
+      margin-bottom: 22px;
+      animation: fadeUp 0.6s 0.45s ease both;
+    }
+
+    .timer-ring-wrap {
+      position: relative; width: 60px; height: 60px;
+      margin: 0 auto 8px;
+    }
+    .timer-ring-wrap svg { transform: rotate(-90deg); }
+    .timer-track { fill:none; stroke:rgba(14,165,233,0.1); stroke-width:3; }
+    .timer-bar {
+      fill:none; stroke:var(--sky); stroke-width:3;
+      stroke-linecap: round;
+      stroke-dasharray: 163;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 0.5s;
+    }
+    .timer-num {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 700; color: var(--sky);
+      transition: color 0.5s;
+    }
+
+    .timer-label { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── SUBMIT BTN ── */
+    .btn-submit {
+      width: 100%; height: 52px;
+      background: linear-gradient(135deg, var(--sky), var(--skyd));
+      border: none; border-radius: 11px;
+      color: white; font-family: 'Outfit', sans-serif;
+      font-size: 0.97rem; font-weight: 700;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      animation: fadeUp 0.6s 0.5s ease both;
+    }
+    .btn-submit .shimmer {
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+      transform: translateX(-100%); transition: transform 0.5s ease;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(14,165,233,0.38); }
+    .btn-submit:hover .shimmer { transform: translateX(100%); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── BACK LINK ── */
+    .back-link {
+      margin-top: 18px; font-size: 0.81rem; color: var(--muted);
+      animation: fadeUp 0.6s 0.55s ease both;
+    }
+    .back-link a {
+      color: var(--sky); font-weight: 600; text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link a:hover { color: var(--sky2); }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="mesh"></div>
+<div class="aurora aur1"></div>
+<div class="aurora aur2"></div>
+<div class="pts" id="pts"></div>
+
+<div class="card">
+  <div class="card-beam"></div>
+  <div class="crn crn-tl"></div><div class="crn crn-tr"></div>
+  <div class="crn crn-bl"></div><div class="crn crn-br"></div>
+
+  <!-- Brand -->
+  <div class="brand">
+    <div class="brand-logo"><i class="fas fa-lungs"></i></div>
+    <span class="brand-name">Pneumo<em>AI</em></span>
+  </div>
+
+  <!-- Shield visual -->
+  <div class="shield-wrap">
+    <div class="shield-ring sr1"><div class="sdot"></div></div>
+    <div class="shield-ring sr2"></div>
+    <div class="shield-core"><i class="fas fa-shield-halved"></i></div>
+  </div>
+
+  <div class="eyebrow"><i class="fas fa-lock"></i> Two-Factor Auth</div>
+  <h2 class="card-title">OTP Verification</h2>
+  <p class="card-sub">
+    A 6-digit code has been sent to your<br>registered email address.
+  </p>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+    <div class="msg-box {% if 'success' in message.tags %}msg-ok{% else %}msg-err{% endif %}">
+      <i class="fas {% if 'success' in message.tags %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}" style="margin-top:2px;flex-shrink:0;"></i>
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if form.errors %}
+  <div class="msg-box msg-err">
+    <i class="fas fa-circle-exclamation" style="margin-top:2px;flex-shrink:0;"></i>
+    <span>{% for key, value in form.errors.items %}{{ value }}{% endfor %}</span>
+  </div>
+  {% endif %}
+
+  <!-- OTP Form -->
+  <form method="post" action="{% url 'verify-otp' %}" id="otpForm" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="otp" id="otpHidden"/>
+
+    <!-- 6 individual boxes -->
+    <div class="otp-boxes" id="otpBoxes">
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" placeholder="·" autocomplete="new-password" readonly onfocus="this.removeAttribute(`readonly`)" data-idx="0"/>
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" placeholder="·" autocomplete="new-password" readonly onfocus="this.removeAttribute(`readonly`)" data-idx="1"/>
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" placeholder="·" autocomplete="new-password" readonly onfocus="this.removeAttribute(`readonly`)" data-idx="2"/>
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" placeholder="·" autocomplete="new-password" readonly onfocus="this.removeAttribute(`readonly`)" data-idx="3"/>
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" placeholder="·" autocomplete="new-password" readonly onfocus="this.removeAttribute(`readonly`)" data-idx="4"/>
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" placeholder="·" autocomplete="new-password" readonly onfocus="this.removeAttribute(`readonly`)" data-idx="5"/>
+    </div>
+
+    <!-- Circular countdown -->
+    <div class="timer-wrap">
+      <div class="timer-ring-wrap">
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle class="timer-track" cx="30" cy="30" r="26"/>
+          <circle class="timer-bar"  cx="30" cy="30" r="26" id="timerBar"/>
+        </svg>
+        <div class="timer-num" id="timerNum">5:00</div>
+      </div>
+      <div class="timer-label">Time remaining</div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">
+      <div class="shimmer"></div>
+      <i class="fas fa-circle-check"></i>
+      Verify OTP
+    </button>
+  </form>
+
+  <div class="back-link">
+    <a href="{% url 'login' %}"><i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back to Login</a>
+  </div>
+</div>
+
+<script>
+  // ── Particles
+  const pts = document.getElementById('pts');
+  for (let i = 0; i < 18; i++) {
+    const d = document.createElement('div');
+    d.className = 'pt';
+    const sz = Math.random() * 5 + 2;
+    const isBlue = Math.random() > 0.4;
+    d.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*18+10}s;
+      animation-delay:-${Math.random()*18}s;
+      background:${isBlue
+        ? `rgba(14,165,233,${(Math.random()*0.18+0.04).toFixed(2)})`
+        : `rgba(249,115,22,${(Math.random()*0.12+0.03).toFixed(2)})`};
+    `;
+    pts.appendChild(d);
+  }
+
+  // ── OTP box behaviour
+  const boxes   = Array.from(document.querySelectorAll('.otp-box'));
+  const hidden  = document.getElementById('otpHidden');
+  const form    = document.getElementById('otpForm');
+  const submitBtn = document.getElementById('submitBtn');
+
+  boxes[0].focus();
+
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', e => {
+      const val = e.target.value.replace(/\D/g,'');
+      box.value = val ? val[0] : '';
+      box.classList.toggle('filled', !!box.value);
+      updateHidden();
+      if (val && i < 5) boxes[i+1].focus();
+      checkAllFilled();
+    });
+
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace') {
+        if (!box.value && i > 0) { boxes[i-1].focus(); boxes[i-1].value = ''; boxes[i-1].classList.remove('filled'); updateHidden(); }
+      }
+      if (e.key === 'ArrowLeft'  && i > 0) boxes[i-1].focus();
+      if (e.key === 'ArrowRight' && i < 5) boxes[i+1].focus();
+    });
+
+    // handle paste
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      paste.split('').forEach((ch, j) => {
+        if (boxes[j]) { boxes[j].value = ch; boxes[j].classList.add('filled'); }
+      });
+      updateHidden();
+      boxes[Math.min(paste.length, 5)].focus();
+      checkAllFilled();
+    });
+  });
+
+  function updateHidden() {
+    hidden.value = boxes.map(b => b.value).join('');
+  }
+
+  function checkAllFilled() {
+    const all = boxes.every(b => b.value !== '');
+    if (all) {
+      boxes.forEach(b => b.classList.add('success'));
+      submitBtn.style.boxShadow = '0 0 0 0 rgba(34,197,94,0.4)';
+    } else {
+      boxes.forEach(b => b.classList.remove('success'));
+    }
+  }
+
+  // auto-submit when all 6 filled
+  form.addEventListener('submit', () => updateHidden());
+
+  // ── Circular countdown (5 min = 300s)
+  const totalSecs  = 300;
+  const circumference = 2 * Math.PI * 26; // ≈ 163.36
+  const timerBar   = document.getElementById('timerBar');
+  const timerNum   = document.getElementById('timerNum');
+  let secs = totalSecs;
+
+  timerBar.style.strokeDasharray  = circumference;
+  timerBar.style.strokeDashoffset = 0;
+
+  const tick = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(tick);
+      timerNum.textContent = '0:00';
+      timerNum.style.color = '#ef4444';
+      timerBar.style.stroke = '#ef4444';
+      timerBar.style.strokeDashoffset = circumference;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-clock"></i> OTP Expired';
+      return;
+    }
+
+    const m = Math.floor(secs / 60);
+    const s = String(secs % 60).padStart(2,'0');
+    timerNum.textContent = `${m}:${s}`;
+
+    // colour shift: green → yellow → red as time runs out
+    const pct = secs / totalSecs;
+    if (pct > 0.5)      { timerBar.style.stroke = 'var(--sky)';   timerNum.style.color = 'var(--sky)'; }
+    else if (pct > 0.2) { timerBar.style.stroke = '#eab308';       timerNum.style.color = '#eab308'; }
+    else                { timerBar.style.stroke = '#ef4444';       timerNum.style.color = '#ef4444'; }
+
+    timerBar.style.strokeDashoffset = circumference * (1 - pct);
+  }, 1000);
+</script>
+
+</body>
+</html>

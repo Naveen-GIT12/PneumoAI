@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>{% block title %}PneumoAI — Detection System{% endblock %}</title>
+    <style>
+        :root {
+            --sky:   #0ea5e9;
+            --sky2:  #38bdf8;
+            --skyd:  #0284c7;
+            --org:   #f97316;
+            --grn:   #10b981;
+            --pur:   #8b5cf6;
+            --dark:  #060d1a;
+            --dark2: #0c1629;
+            --dark3: #111e35;
+            --text:  #d4eaf8;
+            --muted: #5a7fa0;
+            --border: rgba(14,165,233,0.11);
+            --success: #22c55e;
+            --danger:  #ef4444;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ══════════════════════════════
+           NAVBAR
+        ══════════════════════════════ */
+        .top-nav {
+            position: fixed; top:0; left:0; right:0; z-index:1000;
+            height: 66px; padding: 0 36px;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(4,9,18,0.82);
+            backdrop-filter: blur(28px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+            transition: background 0.3s;
+        }
+
+        /* animated sweep line on nav bottom */
+        .top-nav::after {
+            content: '';
+            position: absolute; bottom:-1px; left:0;
+            height:1px; width:0;
+            background: linear-gradient(90deg, transparent, var(--sky), transparent);
+            animation: navLine 4s ease-in-out infinite;
+        }
+        @keyframes navLine {
+            0%,100%{left:0;width:0;opacity:0;}
+            20%{opacity:1;}
+            50%{left:0;width:100%;opacity:1;}
+            80%{opacity:0;}
+        }
+
+        /* brand */
+        .nav-brand {
+            display: flex; align-items: center; gap: 11px;
+            text-decoration: none; flex-shrink: 0;
+        }
+        .nav-brand-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--sky), var(--skyd));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: white;
+            animation: brandPulse 3s ease-in-out infinite;
+        }
+        @keyframes brandPulse {
+            0%,100%{box-shadow:0 0 0 0 rgba(14,165,233,0.4);}
+            50%{box-shadow:0 0 0 8px rgba(14,165,233,0);}
+        }
+        .nav-brand-text {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800; font-size: 1.15rem; color: white;
+            letter-spacing: -0.02em;
+        }
+        .nav-brand-text em { color: var(--sky); font-style: normal; }
+
+        /* nav links wrapper */
+        .nav-links {
+            display: flex; align-items: center;
+            gap: 2px; list-style: none;
+            flex-wrap: nowrap; overflow-x: auto;
+        }
+        .nav-links::-webkit-scrollbar { display: none; }
+
+        .nav-links a {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 12px; border-radius: 8px;
+            color: var(--muted); text-decoration: none;
+            font-size: 0.82rem; font-weight: 500;
+            white-space: nowrap;
+            transition: color 0.2s, background 0.2s;
+        }
+        .nav-links a:hover { background: rgba(14,165,233,0.09); color: var(--sky2); }
+        .nav-links a.active { background: rgba(14,165,233,0.1); color: var(--sky); }
+
+        /* doctor-specific links */
+        .nav-links .nav-doctor {
+            color: rgba(16,185,129,0.8);
+        }
+        .nav-links .nav-doctor:hover {
+            background: rgba(16,185,129,0.09); color: #34d399;
+        }
+
+        /* admin link */
+        .nav-links .nav-admin {
+            color: rgba(249,115,22,0.8);
+        }
+        .nav-links .nav-admin:hover {
+            background: rgba(249,115,22,0.09); color: var(--org);
+        }
+
+        /* logout */
+        .nav-links .btn-logout { color: rgba(248,113,113,0.8); }
+        .nav-links .btn-logout:hover {
+            background: rgba(239,68,68,0.09); color: #f87171;
+        }
+
+        /* login CTA */
+        .nav-links .btn-login {
+            background: rgba(14,165,233,0.1);
+            border: 1px solid rgba(14,165,233,0.22);
+            color: var(--sky2); padding: 7px 18px;
+            position: relative; overflow: hidden;
+        }
+        .nav-links .btn-login::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(14,165,233,0.15), transparent);
+            transform: translateX(-100%); transition: transform 0.5s;
+        }
+        .nav-links .btn-login:hover { color: white; background: rgba(14,165,233,0.18); }
+        .nav-links .btn-login:hover::before { transform: translateX(100%); }
+
+        /* notification badge */
+        .nav-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 16px; height: 16px; padding: 0 4px;
+            background: var(--org); border-radius: 100px;
+            font-size: 0.55rem; font-weight: 800; color: white;
+            margin-left: 2px; line-height: 1;
+        }
+
+        /* divider between nav groups */
+        .nav-divider {
+            width: 1px; height: 20px;
+            background: rgba(14,165,233,0.12);
+            margin: 0 6px; flex-shrink: 0;
+        }
+
+        /* ══════════════════════════════
+           PAGE BODY
+        ══════════════════════════════ */
+        .page-body {
+            padding-top: 66px;
+            min-height: 100vh;
+        }
+
+        /* ══════════════════════════════
+           FLASH MESSAGES
+        ══════════════════════════════ */
+        .flash-messages {
+            position: fixed; top: 76px; right: 20px;
+            z-index: 9999; max-width: 400px;
+        }
+        .flash-msg {
+            display: flex; align-items: flex-start; gap: 11px;
+            padding: 13px 16px; border-radius: 12px;
+            margin-bottom: 10px; font-size: 0.86rem; font-weight: 500;
+            backdrop-filter: blur(20px); border: 1px solid;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            animation: slideInRight 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .flash-msg i { font-size: 0.9rem; margin-top: 1px; flex-shrink: 0; }
+        @keyframes slideInRight {
+            from { opacity:0; transform: translateX(80px); }
+            to   { opacity:1; transform: translateX(0); }
+        }
+        .flash-msg.success { background:rgba(34,197,94,0.12);  border-color:rgba(34,197,94,0.28);  color:#86efac; }
+        .flash-msg.error,
+        .flash-msg.danger  { background:rgba(239,68,68,0.12);  border-color:rgba(239,68,68,0.28);  color:#fca5a5; }
+        .flash-msg.info    { background:rgba(14,165,233,0.12); border-color:rgba(14,165,233,0.28); color:#7dd3fc; }
+        .flash-msg.warning { background:rgba(249,115,22,0.12); border-color:rgba(249,115,22,0.28); color:#fdba74; }
+
+        /* ══════════════════════════════
+           SCROLLBAR
+        ══════════════════════════════ */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--dark); }
+        ::-webkit-scrollbar-thumb { background: var(--dark3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--sky); }
+
+        /* ══════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════ */
+        @media (max-width: 900px) {
+            .top-nav { padding: 0 16px; }
+            .nav-links a { padding: 7px 9px; font-size: 0.78rem; }
+            .nav-links a span { display: none; }   /* hide text, show only icon on mobile */
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- ══ NAVBAR ══ -->
+    <nav class="top-nav">
+        <a href="/" class="nav-brand">
+            <div class="nav-brand-icon"><i class="fas fa-lungs"></i></div>
+            <span class="nav-brand-text">Pneumo<em>AI</em></span>
+        </a>
+
+        <ul class="nav-links">
+            {% if user.is_authenticated %}
+
+                <!-- Core navigation -->
+                <li>
+                    <a href="/" {% if request.path == '/' %}class="active"{% endif %}>
+                        <i class="fas fa-house"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'Deploy_8' %}" {% if 'Deploy_8' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-microscope"></i>
+                        <span>Detection</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'scan-history' %}" {% if 'history' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <span>History</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics' %}" {% if 'analytics' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'compare-scans' %}" {% if 'compare' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-code-compare"></i>
+                        <span>Compare</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'Database' %}" {% if 'Database' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-database"></i>
+                        <span>Database</span>
+                    </a>
+                </li>
+
+                <!-- Patient-only links -->
+                {% if user.profile.user_type == 'patient' %}
+                <div class="nav-divider"></div>
+                <li>
+                    <a href="{% url 'vitals' %}" {% if 'vitals' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-heart-pulse"></i>
+                        <span>Vitals</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Doctor-only links -->
+                {% if user.profile.user_type == 'doctor' %}
+                <div class="nav-divider"></div>
+                <li>
+                    <a href="{% url 'my-patients' %}" class="nav-doctor {% if 'patients' in request.path %}active{% endif %}">
+                        <i class="fas fa-user-injured"></i>
+                        <span>Patients</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'opinion-requests' %}" class="nav-doctor {% if 'second-opinion' in request.path %}active{% endif %}">
+                        <i class="fas fa-comments-medical"></i>
+                        <span>Reviews</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Staff/Admin link -->
+                {% if user.is_staff %}
+                <div class="nav-divider"></div>
+                <li>
+                    <a href="{% url 'admin-dashboard' %}" class="nav-admin {% if 'admin-dashboard' in request.path %}active{% endif %}">
+                        <i class="fas fa-gauge-high"></i>
+                        <span>Admin</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <div class="nav-divider"></div>
+
+                <li>
+                    <a href="{% url 'users-profile' %}" {% if 'profile' in request.path %}class="active"{% endif %}>
+                        <i class="fas fa-circle-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'logout_view' %}" class="btn-logout">
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+
+            {% else %}
+                <li>
+                    <a href="{% url 'login' %}" class="btn-login">
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        <span>Sign In</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- ══ FLASH MESSAGES ══ -->
+    {% if messages %}
+    <div class="flash-messages">
+        {% for message in messages %}
+        <div class="flash-msg {{ message.tags }}">
+            <i class="fas fa-{% if 'success' in message.tags %}circle-check{% elif 'error' in message.tags or 'danger' in message.tags %}circle-exclamation{% elif 'warning' in message.tags %}triangle-exclamation{% else %}circle-info{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ══ PAGE CONTENT ══ -->
+    <div class="page-body">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Auto-dismiss flash messages after 4 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.flash-msg').forEach(el => {
+                el.style.transition = 'all 0.5s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(80px)';
+                setTimeout(() => el.remove(), 500);
+            });
+        }, 4000);
+
+        // Click to dismiss flash messages
+        document.querySelectorAll('.flash-msg').forEach(el => {
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', () => {
+                el.style.transition = 'all 0.3s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(80px)';
+                setTimeout(() => el.remove(), 300);
+            });
+        });
+
+        // Active nav highlight based on current path
+        const path = window.location.pathname;
+        document.querySelectorAll('.nav-links a').forEach(a => {
+            if (a.getAttribute('href') === path) {
+                a.classList.add('active');
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

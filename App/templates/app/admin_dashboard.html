@@ -1,0 +1,230 @@
+{% extends "users/base.html" %}
+{% block title %}Admin Dashboard — PneumoAI{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--org:#f97316;--grn:#10b981;--pur:#8b5cf6;--red:#ef4444;--c0:#03080f;--bd:rgba(14,165,233,0.12);--mu:#3d5a73;--mu2:#5a7fa0;--tx:#d4eaf8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+.rp-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 8% 30%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(ellipse 50% 45% at 92% 72%,rgba(249,115,22,.06) 0%,transparent 50%),var(--c0);}
+.rp-mesh{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(14,165,233,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.028) 1px,transparent 1px);background-size:60px 60px;animation:meshDrift 35s linear infinite;}
+@keyframes meshDrift{0%{background-position:0 0}100%{background-position:60px 60px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes countUp{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:scale(1);}}
+
+.adm{position:relative;z-index:1;padding:40px 44px 60px;font-family:'Plus Jakarta Sans',sans-serif;}
+.adm-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;animation:fadeUp .7s ease both;}
+.adm-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--org);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.adm-eyebrow::before{content:'';width:22px;height:1px;background:var(--org);}
+.adm-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-.02em;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px rgba(16,185,129,.8);animation:pulse 2s ease-in-out infinite;display:inline-block;margin-right:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;animation:fadeUp .7s .1s ease both;}
+.kpi{position:relative;overflow:hidden;background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:20px;backdrop-filter:blur(14px);transition:all .3s;}
+.kpi:hover{transform:translateY(-4px);border-color:rgba(14,165,233,.25);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.c1::before{background:linear-gradient(90deg,var(--sky),var(--sky2));}
+.kpi.c2::before{background:linear-gradient(90deg,var(--grn),#34d399);}
+.kpi.c3::before{background:linear-gradient(90deg,var(--org),#fb923c);}
+.kpi.c4::before{background:linear-gradient(90deg,var(--pur),#a78bfa);}
+.kpi.c5::before{background:linear-gradient(90deg,var(--red),#f87171);}
+.kpi.c6::before{background:linear-gradient(90deg,#ec4899,#f472b6);}
+.kpi.c7::before{background:linear-gradient(90deg,#06b6d4,#67e8f9);}
+.kpi.c8::before{background:linear-gradient(90deg,#eab308,#fde047);}
+.kpi-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.95rem;margin-bottom:12px;}
+.kpi.c1 .kpi-ico{background:rgba(14,165,233,.12);color:var(--sky);}
+.kpi.c2 .kpi-ico{background:rgba(16,185,129,.12);color:var(--grn);}
+.kpi.c3 .kpi-ico{background:rgba(249,115,22,.12);color:var(--org);}
+.kpi.c4 .kpi-ico{background:rgba(139,92,246,.12);color:var(--pur);}
+.kpi.c5 .kpi-ico{background:rgba(239,68,68,.12);color:var(--red);}
+.kpi.c6 .kpi-ico{background:rgba(236,72,153,.12);color:#f472b6;}
+.kpi.c7 .kpi-ico{background:rgba(6,182,212,.12);color:#67e8f9;}
+.kpi.c8 .kpi-ico{background:rgba(234,179,8,.12);color:#fde047;}
+.kpi-val{font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:800;color:white;letter-spacing:-.02em;margin-bottom:3px;animation:countUp .6s ease both;}
+.kpi-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);}
+
+/* charts row */
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-card{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;padding:20px;backdrop-filter:blur(14px);animation:fadeUp .7s .2s ease both;}
+.chart-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(14,165,233,.1);}
+canvas{max-height:240px;}
+
+/* two-col bottom */
+.bottom-row{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;}
+.rc{background:rgba(8,16,30,.88);border:1px solid var(--bd);border-radius:18px;backdrop-filter:blur(14px);animation:fadeUp .7s .3s ease both;}
+.rc-head{display:flex;align-items:center;gap:10px;padding:14px 18px 12px;border-bottom:1px solid rgba(14,165,233,.08);}
+.rc-ico{width:26px;height:26px;border-radius:7px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--sky);}
+.rc-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);}
+
+/* top doctors */
+.doc-list{padding:10px 16px;}
+.doc-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(14,165,233,.06);}
+.doc-row:last-child{border:none;}
+.doc-rank{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:var(--mu);width:20px;flex-shrink:0;}
+.doc-ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--org));display:flex;align-items:center;justify-content:center;font-size:.9rem;color:white;flex-shrink:0;}
+.doc-info{flex:1;}
+.doc-name{font-size:.86rem;font-weight:700;color:white;}
+.doc-spec{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--sky);text-transform:uppercase;letter-spacing:.05em;}
+.doc-count{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:800;color:var(--sky2);}
+
+/* recent scans */
+.scan-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.scan-table th{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);padding:8px 14px;border-bottom:1px solid rgba(14,165,233,.1);text-align:left;}
+.scan-table td{padding:9px 14px;border-bottom:1px solid rgba(14,165,233,.05);color:var(--tx2);}
+.scan-table tr:hover td{background:rgba(14,165,233,.02);}
+.scan-table tr:last-child td{border:none;}
+.scan-lbl{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;text-transform:uppercase;}
+.lbl-cv{background:rgba(239,68,68,.12);color:#f87171;} .lbl-n{background:rgba(16,185,129,.12);color:#34d399;}
+.lbl-b{background:rgba(249,115,22,.12);color:#fb923c;} .lbl-v{background:rgba(14,165,233,.12);color:var(--sky2);}
+.lbl-o{background:rgba(139,92,246,.12);color:#a78bfa;}
+
+@media(max-width:1100px){.kpi-row{grid-template-columns:repeat(4,1fr);}.chart-row,.bottom-row{grid-template-columns:1fr;}.chart-row-3{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.adm{padding:24px 16px;}.kpi-row{grid-template-columns:repeat(2,1fr);}.chart-row-3{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-bg"></div><div class="rp-mesh"></div>
+<div class="adm">
+
+    <div class="adm-hdr">
+        <div>
+            <div class="adm-eyebrow"><i class="fas fa-gauge-high"></i> System Admin</div>
+            <h1 class="adm-title"><span class="live-dot"></span> Admin Dashboard</h1>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--mu2);background:rgba(14,165,233,.06);border:1px solid var(--bd);padding:9px 14px;border-radius:10px;text-align:right;">
+            <div>PneumoAI v2.0</div>
+            <div style="color:var(--grn);margin-top:2px;">● System Operational</div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-row">
+        <div class="kpi c1"><div class="kpi-ico"><i class="fas fa-users"></i></div><div class="kpi-val">{{ total_users }}</div><div class="kpi-lbl">Total Users</div></div>
+        <div class="kpi c2"><div class="kpi-ico"><i class="fas fa-user-injured"></i></div><div class="kpi-val">{{ total_patients }}</div><div class="kpi-lbl">Patients</div></div>
+        <div class="kpi c3"><div class="kpi-ico"><i class="fas fa-stethoscope"></i></div><div class="kpi-val">{{ total_doctors }}</div><div class="kpi-lbl">Doctors</div></div>
+        <div class="kpi c4"><div class="kpi-ico"><i class="fas fa-x-ray"></i></div><div class="kpi-val">{{ total_scans }}</div><div class="kpi-lbl">Total Scans</div></div>
+        <div class="kpi c5"><div class="kpi-ico"><i class="fas fa-calendar-day"></i></div><div class="kpi-val">{{ scans_today }}</div><div class="kpi-lbl">Scans Today</div></div>
+        <div class="kpi c6"><div class="kpi-ico"><i class="fas fa-calendar-week"></i></div><div class="kpi-val">{{ scans_week }}</div><div class="kpi-lbl">This Week</div></div>
+        <div class="kpi c7"><div class="kpi-ico"><i class="fas fa-chart-line"></i></div><div class="kpi-val">{{ avg_confidence }}%</div><div class="kpi-lbl">Avg Confidence</div></div>
+        <div class="kpi c8"><div class="kpi-ico"><i class="fas fa-comments-medical"></i></div><div class="kpi-val">{{ opinion_pending }}</div><div class="kpi-lbl">Pending Reviews</div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-row">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-area"></i> Monthly Scan Volume (Last 6 Months)</div>
+            <canvas id="monthlyChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-pie"></i> Condition Breakdown</div>
+            <canvas id="condChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Severity + condition bar -->
+    <div class="chart-row-3">
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-chart-column"></i> Severity Distribution</div>
+            <canvas id="sevChart"></canvas>
+        </div>
+        <div class="chart-card" style="grid-column:span 2;">
+            <div class="chart-title"><i class="fas fa-chart-column"></i> Scans per Condition</div>
+            <canvas id="condBarChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Bottom row: Top doctors + Recent scans -->
+    <div class="bottom-row">
+        <div class="rc">
+            <div class="rc-head"><div class="rc-ico"><i class="fas fa-trophy"></i></div><span class="rc-lbl">Top Doctors by Scans</span></div>
+            <div class="doc-list">
+                {% for doc in top_doctors %}
+                <div class="doc-row">
+                    <div class="doc-rank">#{{ forloop.counter }}</div>
+                    <div class="doc-ava"><i class="fas fa-user-doctor"></i></div>
+                    <div class="doc-info">
+                        <div class="doc-name">Dr. {{ doc.get_full_name|default:doc.username }}</div>
+                        <div class="doc-spec">{% if doc.doctorprofile %}{{ doc.doctorprofile.specialization }}{% else %}Doctor{% endif %}</div>
+                    </div>
+                    <div class="doc-count">{{ doc.scan_count }}</div>
+                </div>
+                {% empty %}
+                <div style="text-align:center;padding:20px;color:var(--mu);font-size:.85rem;">No doctors yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="rc">
+            <div class="rc-head"><div class="rc-ico"><i class="fas fa-clock-rotate-left"></i></div><span class="rc-lbl">Recent Scans</span></div>
+            <div style="overflow-x:auto;">
+                <table class="scan-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Condition</th>
+                            <th>Confidence</th>
+                            <th>Severity</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scan in recent_scans %}
+                        <tr>
+                            <td>{{ scan.user.username }}</td>
+                            <td>
+                                <span class="scan-lbl {% if scan.predicted_class == 'COVID_19' %}lbl-cv{% elif scan.predicted_class == 'normal' %}lbl-n{% elif scan.predicted_class == 'Pneumonia_Bacterial' %}lbl-b{% elif scan.predicted_class == 'Pneumonia_Viral' %}lbl-v{% else %}lbl-o{% endif %}">
+                                    {{ scan.predicted_label }}
+                                </span>
+                            </td>
+                            <td>{{ scan.confidence|floatformat:1 }}%</td>
+                            <td>{{ scan.severity|default:"—" }}</td>
+                            <td>{{ scan.created_at|date:"d M Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--mu);">No scans yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color='#5a7fa0';
+Chart.defaults.borderColor='rgba(14,165,233,0.07)';
+const BLUE='rgba(14,165,233,1)',BLUE2='rgba(14,165,233,0.15)';
+const ORG='rgba(249,115,22,1)',GRN='rgba(16,185,129,1)',PUR='rgba(139,92,246,1)',RED='rgba(239,68,68,1)';
+const CYAN='rgba(56,189,248,1)';
+const COND_COLORS={'COVID-19':RED,'Normal':GRN,'Lung Opacity':PUR,'Bacterial Pneumonia':ORG,'Viral Pneumonia':CYAN};
+const SEV_COLORS={'None':GRN,'Low':BLUE,'Moderate':ORG,'Severe':RED};
+
+// Monthly
+new Chart(document.getElementById('monthlyChart'),{type:'bar',data:{labels:{{ monthly_labels|safe }},datasets:[{label:'Scans',data:{{ monthly_counts|safe }},backgroundColor:BLUE2,borderColor:BLUE,borderWidth:1.5,borderRadius:6,borderSkipped:false}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(14,165,233,0.06)'}},x:{grid:{display:false}}}}});
+
+// Doughnut
+const cl={{cond_labels|safe}},cc=cl.map(l=>COND_COLORS[l]||BLUE);
+new Chart(document.getElementById('condChart'),{type:'doughnut',data:{labels:cl,datasets:[{data:{{cond_counts|safe}},backgroundColor:cc,borderColor:'rgba(8,16,30,.8)',borderWidth:3,hoverOffset:10}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:12,font:{size:9,family:'JetBrains Mono'}}}},cutout:'65%'}});
+
+// Severity bar
+const sl=JSON.parse('{{ sev_labels|escapejs }}'.replace(/&quot;/g,'"')||'[]');
+const sc=JSON.parse('{{ sev_counts|escapejs }}'.replace(/&quot;/g,'"')||'[]');
+const sevC=sl.map?sl.map(l=>SEV_COLORS[l]||BLUE):[];
+try{
+const sevLabels={{sev_labels|safe}};const sevCounts={{sev_counts|safe}};
+new Chart(document.getElementById('sevChart'),{type:'bar',data:{labels:sevLabels,datasets:[{label:'Count',data:sevCounts,backgroundColor:sevLabels.map(l=>SEV_COLORS[l]||BLUE),borderRadius:8,borderSkipped:false}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(14,165,233,0.06)'}},x:{grid:{display:false}}}}});
+}catch(e){}
+
+// Condition bar
+try{
+new Chart(document.getElementById('condBarChart'),{type:'bar',data:{labels:{{cond_labels|safe}},datasets:[{label:'Scans',data:{{cond_counts|safe}},backgroundColor:{{cond_labels|safe}}.map(l=>COND_COLORS[l]||BLUE),borderRadius:6,borderSkipped:false}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(14,165,233,0.06)'}},x:{grid:{display:false}}}}});
+}catch(e){}
+</script>
+{% endblock %}
