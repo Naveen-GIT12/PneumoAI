@@ -30,3 +30,5 @@ psycopg[binary]==3.3.8
 python-dotenv==1.2.4
 requests==2.34.2
 reportlab==5.1.0
+
+waitress==3.0.2
