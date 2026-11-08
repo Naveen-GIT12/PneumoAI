@@ -23,6 +23,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout as auth_logout, login as auth_login
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.core.mail import send_mail, EmailMessage
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import PermissionDenied
@@ -30,13 +31,19 @@ from django.db.models import Count, Avg, Q
 from django.db.models.functions import TruncMonth, TruncWeek
 from django.utils import timezone
 
-import os, re, json, random, uuid, io
+import os
+# Must be set before importing TensorFlow so tf.keras uses the Keras 2 API
+# required to load the original PneumoAI Model.h5 under TensorFlow 2.16.
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
+
+import re, json, random, uuid, io
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, date, timedelta
 
 import numpy as np
 from PIL import Image, ImageOps, ImageFilter
+from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 from tensorflow import keras
 
 from .forms import (
@@ -571,19 +578,21 @@ def generate_pdf_buffer(record, request=None):
     ]:
         field = getattr(record, field_name, None)
         try:
-            if field and getattr(field, "path", None):
-                import os
-                if os.path.isfile(field.path):
-                    image_paths.append((field.path, caption))
-        except Exception:
-            pass
+            if field and field.name and field.storage.exists(field.name):
+                with field.open("rb") as stored_file:
+                    image_bytes = stored_file.read()
+                if image_bytes:
+                    image_paths.append((io.BytesIO(image_bytes), caption))
+        except Exception as image_error:
+            print(f"[PneumoAI PDF] Could not read {field_name} from storage: {image_error}")
 
     if image_paths:
         story.append(Paragraph("3. Image Review", section_style))
         image_cells = []
-        for path, caption in image_paths:
+        for image_buffer, caption in image_paths:
             try:
-                img = RLImage(path)
+                image_buffer.seek(0)
+                img = RLImage(image_buffer)
                 img._restrictSize(7.7*cm, 7.0*cm)
                 image_cells.append([
                     img,
@@ -594,9 +603,7 @@ def generate_pdf_buffer(record, request=None):
             except Exception:
                 continue
         if image_cells:
-            row = []
-            for img, caption in image_cells:
-                row.append([img, caption])
+            row = [[img, caption] for img, caption in image_cells]
             image_table = Table([row], colWidths=[8.7*cm] * len(row))
             image_table.setStyle(TableStyle([
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -885,16 +892,26 @@ def Deploy_8(request):
         form = FormClass(request.POST, request.FILES)
         if form.is_valid():
             image_file = request.FILES['image']
-            ext        = image_file.name.rsplit('.', 1)[-1].lower()
-            fname      = f"{uuid.uuid4().hex}.{ext}"
-            save_dir   = os.path.join(settings.MEDIA_ROOT, 'images')
-            os.makedirs(save_dir, exist_ok=True)
-            save_path  = os.path.join(save_dir, fname)
-            with open(save_path, 'wb+') as dest:
-                for chunk in image_file.chunks():
-                    dest.write(chunk)
-            image_rel = f"images/{fname}"
-            image_pil = Image.open(save_path).convert('RGB')
+            ext = image_file.name.rsplit('.', 1)[-1].lower() if '.' in image_file.name else 'jpg'
+            if not re.fullmatch(r'[a-z0-9]{1,8}', ext):
+                ext = 'jpg'
+            fname = f"{uuid.uuid4().hex}.{ext}"
+            requested_name = f"images/{fname}"
+
+            # Use the configured Django storage backend. In development this
+            # remains local; in production it writes to the configured S3 bucket.
+            image_rel = default_storage.save(requested_name, image_file)
+            try:
+                with default_storage.open(image_rel, 'rb') as stored_image:
+                    image_pil = Image.open(stored_image).convert('RGB')
+                    image_pil.load()
+            except Exception:
+                # Do not leave an unusable upload in storage.
+                try:
+                    default_storage.delete(image_rel)
+                except Exception:
+                    pass
+                raise
 
             # ── Fast model inference (cached model; no repeated disk loading)
             model = get_prediction_model()
@@ -935,50 +952,30 @@ def Deploy_8(request):
                 media_root  = settings.MEDIA_ROOT,
                 media_url   = settings.MEDIA_URL,
                 model       = model,
+                storage     = default_storage,
                 boxes       = boxes,
                 class_index = class_idx,
             )
-            # Verify that Grad-CAM actually wrote the PNG before storing its path.
-            # generate_advanced_heatmap returns: MEDIA_URL + 'heatmap/<filename>'.
+            # Grad-CAM returns the saved storage key (for example heatmap/xyz.png).
+            # Verify it through the same backend; never assume a local MEDIA_ROOT path.
             hm_rel = ''
             if affected_url:
-                media_prefix = settings.MEDIA_URL.rstrip('/') + '/'
-                relative_candidate = affected_url
-
-                if relative_candidate.startswith(media_prefix):
-                    relative_candidate = relative_candidate[len(media_prefix):]
+                candidate_key = str(affected_url).replace('\\\\', '/').lstrip('/')
+                if candidate_key.startswith('heatmap/') and default_storage.exists(candidate_key):
+                    hm_rel = candidate_key
+                    try:
+                        affected_url = default_storage.url(hm_rel)
+                    except Exception as storage_url_error:
+                        print(f"[GradCAM] Could not create heatmap URL: {storage_url_error}")
+                        affected_url = ''
+                        hm_rel = ''
+                    if hm_rel:
+                        print(f"[GradCAM] Heatmap verified in configured storage: {hm_rel}")
                 else:
-                    # Accept a media-relative path, but never an arbitrary URL/path.
-                    relative_candidate = relative_candidate.lstrip('/')
-
-                relative_candidate = relative_candidate.replace('\\\\', '/')
-                candidate_path = os.path.abspath(
-                    os.path.join(settings.MEDIA_ROOT, relative_candidate)
-                )
-                media_root_abs = os.path.abspath(settings.MEDIA_ROOT)
-
-                try:
-                    is_inside_media = (
-                        os.path.commonpath([media_root_abs, candidate_path])
-                        == media_root_abs
-                    )
-                except ValueError:
-                    is_inside_media = False
-
-                if is_inside_media and os.path.isfile(candidate_path):
-                    hm_rel = os.path.relpath(
-                        candidate_path, media_root_abs
-                    ).replace('\\\\', '/')
-                    affected_url = settings.MEDIA_URL.rstrip('/') + '/' + hm_rel
-                    print(f"[GradCAM] Heatmap verified: {candidate_path}")
-                else:
+                    print(f"[GradCAM] Heatmap key missing from storage: {candidate_key}")
                     affected_url = ''
-                    print(
-                        "[GradCAM] Returned URL does not point to an existing "
-                        f"file inside MEDIA_ROOT: {candidate_path}"
-                    )
             else:
-                print("[GradCAM] Generation returned an empty URL.")
+                print("[GradCAM] Generation returned an empty storage key.")
 
             # ── Feature 6: Gemini recommendations (for doctor scans or when age available)
             patient_age    = form.cleaned_data.get('patient_age')    if is_doctor else None

@@ -7,7 +7,14 @@ Does not generate artificial or random hotspots.
 """
 
 import os
+# Keep TensorFlow on the legacy Keras API used to serialize Model.h5.
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
+
 import uuid
+import io
+
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 
 import numpy as np
 import tensorflow as tf
@@ -358,6 +365,7 @@ def generate_advanced_heatmap(
     model=None,
     boxes=None,
     class_index=None,
+    storage=None,
 ):
     """
     Generate a genuine Grad-CAM overlay.
@@ -478,42 +486,32 @@ def generate_advanced_heatmap(
             float(confidence),
         )
 
-        # Save heatmap.
+        # Save through Django storage. This works with local storage and
+        # S3-compatible private buckets (including Supabase Storage).
+        storage_backend = storage or default_storage
         filename = (
             f"gradcam_{pred_class}_"
             f"{uid or uuid.uuid4().hex[:8]}.png"
         )
+        storage_name = f"heatmap/{filename}"
 
-        output_directory = os.path.join(
-            str(media_root),
-            "heatmap",
+        image_buffer = io.BytesIO()
+        result.save(image_buffer, format="PNG", optimize=True)
+        image_bytes = image_buffer.getvalue()
+
+        saved_name = storage_backend.save(
+            storage_name,
+            ContentFile(image_bytes),
         )
 
-        os.makedirs(
-            output_directory,
-            exist_ok=True,
-        )
+        if not storage_backend.exists(saved_name):
+            raise IOError(f"Storage did not confirm saved heatmap: {saved_name}")
 
-        output_path = os.path.join(
-            output_directory,
-            filename,
-        )
+        print(f"[GradCAM] Generated successfully in storage: {saved_name}")
 
-        result.save(
-            output_path,
-            format="PNG",
-            optimize=True,
-        )
-
-        print(
-            f"[GradCAM] Generated successfully: {filename}"
-        )
-
-        return (
-            media_url.rstrip("/")
-            + "/heatmap/"
-            + filename
-        )
+        # Return the storage key, not a local path or public URL.
+        # Django's ImageField will resolve its URL using the configured backend.
+        return saved_name
 
     except Exception as error:
         print(
@@ -570,8 +568,9 @@ def generate_heatmap(
     media_url="/media/",
     model=None,
     class_index=None,
+    storage=None,
 ):
-    """Backward-compatible heatmap wrapper."""
+    """Backward-compatible heatmap wrapper using Django storage."""
 
     from django.conf import settings
 
@@ -590,4 +589,5 @@ def generate_heatmap(
         model=model,
         boxes=boxes,
         class_index=class_index,
+        storage=storage,
     )

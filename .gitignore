@@ -13,3 +13,34 @@ staticfiles/
 .vscode/
 .pytest_cache/
 .DS_Store
+# Local Python environments
+venv/
+venv311/
+venv312/
+__pycache__/
+*.py[cod]
+
+# Local secrets and databases
+.env
+.env.*
+!.env.example
+db.sqlite3
+
+# Local media and user uploads
+media/
+
+# Local backups
+*.backup
+
+# Local migration and diagnostic scripts
+check_media.py
+installed_packages_venv312.txt
+migrate_heatmaps_to_supabase.py
+migrate_media_to_supabase.py
+preview_heatmap_migration.py
+preview_media_migration.py
+test_gradcam_compat.py
+verify_supabase_media.py
+
+# Vercel local configuration
+.vercel/
